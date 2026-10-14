@@ -1,0 +1,194 @@
+@let dg = diagram();
+@let current = step();
+
+<div class="diagram">
+  <div class="scenarios" role="tablist" aria-label="Qué quieres ver" (keydown)="onTabKey($event)">
+    @for (s of dg.scenarios; track s.id; let i = $index) {
+      <button
+        type="button"
+        role="tab"
+        class="scenario"
+        [id]="uid() + '-tab-' + i"
+        [attr.aria-selected]="i === scenarioIndex()"
+        [attr.aria-controls]="uid() + '-panel'"
+        [attr.tabindex]="i === scenarioIndex() ? 0 : -1"
+        (click)="selectScenario(i)"
+      >
+        {{ s.name }}
+      </button>
+    }
+  </div>
+
+  <div
+    class="panel"
+    role="tabpanel"
+    [id]="uid() + '-panel'"
+    [attr.aria-labelledby]="uid() + '-tab-' + scenarioIndex()"
+  >
+    <p class="summary">{{ scenario().summary }}</p>
+
+    <figure class="drawing drawing-sheet">
+      @for (l of layouts; track l) {
+        <ng-container *ngTemplateOutlet="plano; context: { $implicit: l }" />
+      }
+      <figcaption class="visually-hidden">
+        {{ dg.title }}. Paso {{ stepIndex() + 1 }}: {{ current.title }}.
+      </figcaption>
+    </figure>
+
+    <div class="walkthrough">
+      <div class="detail" aria-live="polite">
+        <p class="count">Paso {{ stepIndex() + 1 }} de {{ steps().length }}</p>
+        <h3 class="detail-title">{{ current.title }}</h3>
+        <p class="detail-text">{{ current.text }}</p>
+        @if (current.why) {
+          <p class="why"><span class="why-label">Por qué así.</span> {{ current.why }}</p>
+        }
+        @if (current.code?.length) {
+          <ul class="code-refs" aria-label="En el código">
+            @for (c of current.code; track c) {
+              <li>
+                <code>{{ c }}</code>
+              </li>
+            }
+          </ul>
+        }
+        <div class="controls">
+          <button type="button" class="btn" (click)="previous()" [disabled]="isFirst()">
+            Anterior
+          </button>
+          <button type="button" class="btn btn--solid" (click)="next()" [disabled]="isLast()">
+            Siguiente
+          </button>
+          <button
+            type="button"
+            class="btn btn--quiet"
+            (click)="togglePlay()"
+            [attr.aria-pressed]="playing()"
+          >
+            {{ playing() ? 'Pausar' : isLast() ? 'Ver de nuevo' : 'Reproducir solo' }}
+          </button>
+        </div>
+      </div>
+
+      <ol class="steps">
+        @for (s of steps(); track $index; let i = $index) {
+          <li>
+            <button
+              type="button"
+              class="step"
+              [class.is-done]="i < stepIndex()"
+              [attr.aria-current]="i === stepIndex() ? 'step' : null"
+              (click)="goTo(i)"
+            >
+              <span class="step-n">{{ i + 1 }}</span>
+              <span class="step-title">{{ s.title }}</span>
+            </button>
+          </li>
+        }
+      </ol>
+    </div>
+  </div>
+</div>
+
+<ng-template #plano let-l>
+  @let lay = asLayout(l);
+  @let size = dg.size[lay];
+  @let geo = geometry()[lay];
+  @let parts = scenarioParts();
+  <svg
+    class="plano"
+    [class.plano--d]="lay === 'd'"
+    [class.plano--m]="lay === 'm'"
+    [attr.viewBox]="'0 0 ' + size[0] + ' ' + size[1]"
+    role="img"
+    [attr.aria-label]="dg.title"
+    focusable="false"
+  >
+    <defs>
+      <marker
+        [attr.id]="uid() + lay + '-a'"
+        viewBox="0 0 10 10"
+        refX="9"
+        refY="5"
+        markerWidth="7"
+        markerHeight="7"
+        orient="auto-start-reverse"
+      >
+        <path d="M0 1 L9 5 L0 9 z" class="arrow" />
+      </marker>
+      <marker
+        [attr.id]="uid() + lay + '-a-on'"
+        viewBox="0 0 10 10"
+        refX="9"
+        refY="5"
+        markerWidth="7"
+        markerHeight="7"
+        orient="auto-start-reverse"
+      >
+        <path d="M0 1 L9 5 L0 9 z" class="arrow arrow--on" />
+      </marker>
+    </defs>
+
+    @for (g of dg.groups ?? []; track g.id) {
+      <g class="group">
+        <rect
+          [attr.x]="g[lay].x"
+          [attr.y]="g[lay].y"
+          [attr.width]="g[lay].w"
+          [attr.height]="g[lay].h"
+        />
+        <text [attr.x]="g[lay].x + 10" [attr.y]="g[lay].y + 20">{{ g.label }}</text>
+      </g>
+    }
+
+    @for (e of dg.edges; track e.id) {
+      @let eg = geo.get(e.id)!;
+      @let on = activeEdges().has(e.id);
+      <g class="edge" [class.is-on]="on" [class.is-out]="!parts.edges.has(e.id)">
+        <path
+          [attr.d]="eg.d"
+          [attr.marker-end]="'url(#' + uid() + lay + (on ? '-a-on' : '-a') + ')'"
+        />
+        @if (e.label) {
+          <text class="edge-label" [attr.x]="eg.labelAt.x" [attr.y]="eg.labelAt.y - 6">
+            {{ e.label }}
+          </text>
+        }
+      </g>
+    }
+
+    @for (n of dg.nodes; track n.id) {
+      @let b = n[lay];
+      @let sub = lay === 'm' ? (n.subM ?? n.sub) : n.sub;
+      <g
+        class="node"
+        [class.is-on]="activeNodes().has(n.id)"
+        [class.is-out]="!parts.nodes.has(n.id)"
+      >
+        <rect [attr.x]="b.x" [attr.y]="b.y" [attr.width]="b.w" [attr.height]="b.h" rx="2" />
+        <text
+          class="node-label"
+          [attr.x]="b.x + b.w / 2"
+          [attr.y]="nodeLabelY(lay, b.h, b.y, !!sub)"
+        >
+          {{ n.label }}
+        </text>
+        @if (sub) {
+          <text class="node-sub" [attr.x]="b.x + b.w / 2" [attr.y]="b.y + b.h * 0.78">
+            {{ sub }}
+          </text>
+        }
+      </g>
+    }
+
+    @for (t of tokens(); track t.key) {
+      <circle
+        class="token"
+        [attr.cx]="t[lay].x"
+        [attr.cy]="t[lay].y"
+        [attr.r]="lay === 'd' ? 6 : 5.5"
+      />
+    }
+  </svg>
+</ng-template>

@@ -1,0 +1,150 @@
+<section class="hero wrap" aria-labelledby="nombre">
+  <div class="hero-text">
+    <h1 id="nombre" class="name">{{ profile.name }}</h1>
+    <p class="role">{{ profile.role }}</p>
+    <p class="intro">{{ profile.intro }}</p>
+    <div class="actions">
+      <a class="btn btn--solid" [href]="profile.cv" download>Descargar CV</a>
+      <a class="btn" [href]="profile.github">GitHub</a>
+      <a class="btn" [href]="profile.linkedin">LinkedIn</a>
+    </div>
+  </div>
+
+  <aside class="hero-card" aria-label="Datos de contacto y disponibilidad">
+    <picture>
+      <source [srcset]="profile.photo" type="image/webp" />
+      <img
+        class="photo"
+        [src]="profile.photoFallback"
+        alt="Foto de Daniel Martín López"
+        width="372"
+        height="372"
+      />
+    </picture>
+    <dl class="cajetin">
+      @for (f of profile.facts; track f.label) {
+        <dt>{{ f.label }}</dt>
+        <dd>{{ f.value }}</dd>
+      }
+      <dt>Correo</dt>
+      <dd>
+        <a [href]="'mailto:' + profile.email">{{ profile.email }}</a>
+      </dd>
+    </dl>
+  </aside>
+</section>
+
+<section id="proyectos" class="block wrap" aria-labelledby="t-proyectos">
+  <h2 id="t-proyectos" class="section-title">Proyectos</h2>
+  <p class="lead">
+    Dos proyectos con el código público. En cada uno puedes seguir, paso a paso, qué pasa por dentro
+    cuando un usuario hace algo.
+  </p>
+
+  <div class="sheets">
+    @for (p of projects; track p.slug) {
+      <article class="sheet">
+        <a
+          class="sheet-drawing drawing-sheet"
+          [routerLink]="['/proyectos', p.slug]"
+          tabindex="-1"
+          aria-hidden="true"
+        >
+          <app-diagram-preview [diagram]="p.diagram" />
+        </a>
+        <div class="sheet-body">
+          <p class="sheet-n">{{ p.sheet }}</p>
+          <h3 class="sheet-name">
+            <a [routerLink]="['/proyectos', p.slug]">{{ p.name }}</a>
+          </h3>
+          <p class="sheet-tagline">{{ p.tagline }}</p>
+          <p class="sheet-desc">{{ p.description }}</p>
+          <div class="sheet-links">
+            <a class="btn btn--solid" [routerLink]="['/proyectos', p.slug]">Ver cómo funciona</a>
+            <a class="btn" [href]="p.repo">Código en GitHub</a>
+          </div>
+        </div>
+      </article>
+    }
+  </div>
+</section>
+
+<div class="wrap two-col">
+  <section id="experiencia" class="block" aria-labelledby="t-experiencia">
+    <h2 id="t-experiencia" class="section-title">Experiencia</h2>
+    <ol class="timeline">
+      @for (e of experience; track e.role) {
+        <li>
+          <p class="when">{{ e.period }}</p>
+          <h3 class="what">{{ e.role }}</h3>
+          <p class="where">{{ e.company }}, {{ e.place }}</p>
+          @if (e.points.length) {
+            <ul class="points">
+              @for (pt of e.points; track pt) {
+                <li>{{ pt }}</li>
+              }
+            </ul>
+          }
+        </li>
+      }
+    </ol>
+  </section>
+
+  <section id="formacion" class="block" aria-labelledby="t-formacion">
+    <h2 id="t-formacion" class="section-title">Formación</h2>
+    <ol class="timeline">
+      @for (e of education; track e.title) {
+        <li>
+          <p class="when">{{ e.period }}</p>
+          <h3 class="what">{{ e.title }}</h3>
+          <p class="where">{{ e.center }}</p>
+        </li>
+      }
+    </ol>
+  </section>
+</div>
+
+<section id="stack" class="block wrap" aria-labelledby="t-stack">
+  <h2 id="t-stack" class="section-title">Con qué trabajo</h2>
+  <div class="stack">
+    @for (group of stack; track group.area) {
+      <table class="stack-table">
+        <caption>
+          {{
+            group.area
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Tecnología</th>
+            <th scope="col">Dónde la he usado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of group.items; track item.tech) {
+            <tr>
+              <th scope="row">{{ item.tech }}</th>
+              <td>{{ item.where }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</section>
+
+<section id="contacto" class="block wrap contact" aria-labelledby="t-contacto">
+  <h2 id="t-contacto" class="section-title">Contacto</h2>
+  <p class="lead">
+    Busco trabajo como desarrollador backend o full stack. Si crees que puedo encajar en tu equipo,
+    escríbeme.
+  </p>
+  <p class="mail">
+    <a [href]="'mailto:' + profile.email">{{ profile.email }}</a>
+  </p>
+  <div class="actions">
+    <a class="btn btn--solid" [href]="profile.cv" download>Descargar CV</a>
+    <a class="btn" [href]="profile.linkedin">LinkedIn</a>
+    <a class="btn" [href]="profile.github">GitHub</a>
+  </div>
+</section>
