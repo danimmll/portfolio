@@ -13,7 +13,7 @@
   gap: 12px 20px;
 }
 
-.scenarios {
+.flows {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -41,7 +41,7 @@
     border-color: var(--text-3);
   }
 
-  &[aria-selected='true'] {
+  &[aria-pressed='true'] {
     color: var(--bg);
     background: var(--text);
     border-color: var(--text);
@@ -55,8 +55,150 @@
   background: var(--req);
 }
 
-.scn.is-error .scn-dot {
-  background: var(--err);
+// ——— Rompe el sistema ———
+
+.breaker {
+  margin-top: 14px;
+  padding: 14px 16px 16px;
+  border: 1px dashed var(--err-line);
+  border-radius: 16px;
+  background: rgb(255 111 111 / 0.04);
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+
+  &.is-on {
+    border-style: solid;
+    border-color: var(--err);
+    background: rgb(255 111 111 / 0.07);
+  }
+}
+
+.breaker-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-bottom: 12px;
+
+  app-icon {
+    align-self: center;
+    color: var(--err);
+  }
+}
+
+.breaker-title {
+  margin: 0;
+  font: 650 1rem/1.2 var(--font-display);
+  color: var(--text);
+}
+
+.breaker-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-2);
+}
+
+.switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (max-width: 600px) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+
+    .switch {
+      width: 100%;
+      height: 100%;
+      min-height: 44px;
+      padding: 6px 10px 6px 8px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      line-height: 1.2;
+      text-align: left;
+    }
+
+    .knob {
+      flex: none;
+    }
+  }
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 14px 0 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-2);
+  font: 500 0.9rem/1 var(--font-body);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+
+  &:hover {
+    color: var(--text);
+    border-color: var(--text-3);
+  }
+
+  .knob {
+    position: relative;
+    width: 34px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--surface-3);
+    transition: background-color 0.2s;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--text-3);
+      transition:
+        transform 0.2s,
+        background-color 0.2s;
+    }
+  }
+
+  &[aria-checked='true'] {
+    color: var(--text);
+    border-color: var(--err);
+
+    .knob {
+      background: var(--err);
+    }
+
+    .knob::after {
+      transform: translateX(14px);
+      background: #fff;
+    }
+  }
+}
+
+.fault-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  font: 650 1.05rem/1.2 var(--font-display);
+  color: var(--err);
+}
+
+.board.is-fault {
+  border-color: var(--err-line);
 }
 
 .views {
@@ -793,7 +935,7 @@
   margin-top: 18px;
 
   @media (min-width: 980px) {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 28px;
     align-items: start;
   }
@@ -830,8 +972,44 @@
   }
 }
 
+.travel {
+  min-width: 0;
+  padding: 6px 0 0;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.travel-title {
+  margin: 0;
+  padding: 10px 16px 4px;
+  font-weight: 650;
+}
+
+.code-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 14px 14px;
+  background: transparent;
+  color: var(--req);
+  font: 600 0.92rem/1 var(--font-body);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface-2);
+  }
+}
+
 .source {
   min-width: 0;
+  margin-top: 18px;
   border: 1px solid var(--line-2);
   border-radius: 14px;
   background: var(--code-bg);
@@ -951,7 +1129,7 @@
 
 .msgs {
   margin: 0;
-  padding: 8px 0;
+  padding: 2px 0 6px;
   list-style: none;
 }
 

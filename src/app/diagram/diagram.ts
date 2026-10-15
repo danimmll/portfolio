@@ -26,7 +26,7 @@ const EDGE_MS = 950;
 const SELF_MS = 850;
 
 export type View = 'arch' | 'seq';
-type Tab = 'code' | 'http' | 'msgs';
+type Tab = 'code' | 'http';
 
 interface Timed {
   msg: Msg;
@@ -116,6 +116,9 @@ export class DiagramComponent {
   readonly playing = signal(false);
   readonly selectedId = signal<string | null>(null);
   private readonly tabPref = signal<Tab>('code');
+  /** El código de cada paso va plegado; si lo abres, se queda abierto al cambiar de paso. */
+  readonly showCode = signal(false);
+  private lastFlow = 0;
   /** Milisegundos desde que empezó el paso. Infinito: recorrido terminado (estado estático). */
   private readonly elapsed = signal(Number.POSITIVE_INFINITY);
   private seen = false;
@@ -303,15 +306,29 @@ export class DiagramComponent {
     const tabs: Tab[] = [];
     if (s.code) tabs.push('code');
     if (s.http) tabs.push('http');
-    tabs.push('msgs');
     return tabs;
   });
 
-  readonly tab = computed<Tab>(() => {
+  readonly tab = computed<Tab | undefined>(() => {
     const pref = this.tabPref();
     const tabs = this.tabs();
     return tabs.includes(pref) ? pref : tabs[0];
   });
+
+  /** Flujos normales (pestañas) y fallos provocados (interruptores), con su índice real. */
+  readonly flows = computed(() =>
+    this.diagram()
+      .scenarios.map((s, i) => ({ s, i }))
+      .filter((x) => !x.s.fault),
+  );
+
+  readonly faults = computed(() =>
+    this.diagram()
+      .scenarios.map((s, i) => ({ s, i }))
+      .filter((x) => !!x.s.fault),
+  );
+
+  readonly isFault = computed(() => !!this.scenario().fault);
 
   readonly codeLines = computed(() => {
     const c = this.step().code;
@@ -419,31 +436,32 @@ export class DiagramComponent {
 
   selectScenario(index: number): void {
     if (index === this.scenarioIndex()) return;
+    if (!this.diagram().scenarios[index].fault) this.lastFlow = index;
     this.scenarioIndex.set(index);
     this.stepIndex.set(0);
     this.playing.set(false);
     this.syncUrl();
   }
 
-  onTabKey(event: KeyboardEvent): void {
-    const count = this.diagram().scenarios.length;
-    let next = -1;
-    if (event.key === 'ArrowRight') next = (this.scenarioIndex() + 1) % count;
-    if (event.key === 'ArrowLeft') next = (this.scenarioIndex() - 1 + count) % count;
-    if (event.key === 'Home') next = 0;
-    if (event.key === 'End') next = count - 1;
-    if (next < 0) return;
-    event.preventDefault();
-    event.stopPropagation();
-    this.selectScenario(next);
-    (event.currentTarget as HTMLElement)
-      .querySelectorAll<HTMLElement>('[role="tab"]')
-      [next]?.focus();
+  /** Activa un fallo y lo reproduce; si ya estaba activo, vuelve al último flujo normal. */
+  toggleFault(index: number): void {
+    if (index === this.scenarioIndex()) {
+      this.selectScenario(this.lastFlow);
+      return;
+    }
+    this.selectScenario(index);
+    this.seen = true;
+    this.travel();
+    this.playing.set(true);
+  }
+
+  toggleCode(): void {
+    this.showCode.update((v) => !v);
   }
 
   onKey(event: KeyboardEvent): void {
     const target = event.target as HTMLElement;
-    if (target.closest('[role="tablist"]')) return;
+    if (target.closest('[role="tablist"], [role="switch"], input')) return;
     if (event.key === 'Escape' && this.selectedId()) {
       this.selectedId.set(null);
       return;
@@ -525,9 +543,7 @@ export class DiagramComponent {
   }
 
   tabLabel(t: Tab): string {
-    if (t === 'code') return this.step().code?.file ?? 'Código';
-    if (t === 'http') return 'HTTP de ejemplo';
-    return 'Mensajes';
+    return t === 'code' ? (this.step().code?.file ?? 'Código') : 'HTTP de ejemplo';
   }
 
   trackTok(_: number, tok: Tok): string {

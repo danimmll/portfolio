@@ -358,7 +358,7 @@ Content-Type: application/json
     {
       id: 'sesion-caducada',
       name: 'Sesión caducada',
-      tone: 'error',
+      fault: 'Caducar el token',
       summary:
         'El access token dura 15 minutos. Cuando caduca a mitad de uso, la web lo renueva sola y repite la petición sin que el usuario se entere.',
       steps: [
@@ -503,7 +503,7 @@ Content-Type: application/json
     {
       id: 'servicio-caido',
       name: 'Servicio caído',
-      tone: 'error',
+      fault: 'Tumbar predicciones',
       summary:
         'Si un microservicio no responde, el Gateway corta por lo sano y el usuario recibe un error claro en vez de quedarse esperando.',
       steps: [
@@ -544,6 +544,189 @@ Content-Type: application/problem+json
   "status": 503,
   "detail": "The requested service is temporarily unavailable. Please try again later."
 }`,
+        },
+      ],
+    },
+    {
+      id: 'sin-premium',
+      name: 'Usuario sin Premium',
+      fault: 'Quitar el Premium',
+      summary:
+        'Un usuario con la cuenta gratuita intenta abrir una predicción en directo, que es una función de pago.',
+      steps: [
+        {
+          title: 'Un usuario FREE pide una predicción',
+          text: 'Tiene una sesión válida, así que la petición pasa el Gateway como cualquier otra.',
+          msgs: [
+            { from: 'nav', to: 'gw', label: 'GET /predicciones/{id}/en-vivo' },
+            { from: 'gw', to: 'pred', label: '+ X-Internal-Secret' },
+          ],
+        },
+        {
+          title: 'El token es válido, pero no basta',
+          text: 'JwtValidationFilter acepta el token y deja los roles en el contexto de seguridad. Después, verificarAcceso() busca PREMIUM o ADMIN y no los encuentra.',
+          why: 'La regla «solo Premium» está en el servicio y no solo en el frontend: aunque alguien llame a la API a mano, no se la salta.',
+          msgs: [
+            { from: 'pred', to: 'pred', label: 'JWT válido, rol FREE' },
+            { from: 'pred', to: 'pred', label: 'verificarAcceso()' },
+          ],
+          code: S.svPredAccess,
+        },
+        {
+          title: '403 con un motivo claro',
+          text: 'GlobalExceptionHandler convierte la ForbiddenException en un 403 con formato ProblemDetail, y la web enseña el motivo que llega en el detalle del error en lugar de un fallo genérico.',
+          msgs: [
+            { from: 'pred', to: 'gw', label: '403 solo Premium', kind: 'err' },
+            { from: 'gw', to: 'nav', label: '403', kind: 'err' },
+          ],
+          http: `HTTP/1.1 403 Forbidden
+Content-Type: application/problem+json
+
+{
+  "type": "about:blank",
+  "title": "Forbidden",
+  "status": 403,
+  "detail": "Las predicciones son exclusivas para usuarios Premium."
+}`,
+        },
+      ],
+    },
+    {
+      id: 'refresh-robado',
+      name: 'Refresh token robado',
+      fault: 'Robar un refresh token',
+      summary:
+        'Alguien copia la cookie de sesión de un usuario. La rotación con detección de reuso hace que el robo se descubra en cuanto el dueño vuelve a usarla.',
+      steps: [
+        {
+          title: 'Alguien usa la cookie robada',
+          text: 'Desde otro navegador, el atacante pide un refresh con la cookie copiada. El token es válido, así que consigue una sesión y el token original queda consumido.',
+          msgs: [
+            { from: 'nav', to: 'gw', label: 'atacante: POST /auth/refresh' },
+            { from: 'gw', to: 'usr', label: 'cookie copiada' },
+            { from: 'usr', to: 'db', label: 'revocarSiActivo(jti)' },
+            { from: 'db', to: 'usr', label: '1 fila', kind: 'res' },
+            { from: 'usr', to: 'gw', label: '200 + tokens nuevos', kind: 'res' },
+            { from: 'gw', to: 'nav', label: '200', kind: 'res' },
+          ],
+          code: S.svUsrRefresh,
+        },
+        {
+          title: 'El dueño renueva su sesión',
+          text: 'La pestaña del usuario sigue abierta. Cuando su access token caduca, pide un refresh con la cookie de siempre, que ya se consumió en el paso anterior.',
+          msgs: [
+            { from: 'nav', to: 'gw', label: 'POST /auth/refresh' },
+            { from: 'gw', to: 'usr', label: 'cookie original' },
+            { from: 'usr', to: 'db', label: 'revocarSiActivo(jti)' },
+            { from: 'db', to: 'usr', label: '0 filas: ya revocado', kind: 'err' },
+          ],
+        },
+        {
+          title: 'Reuso detectado',
+          text: 'Un refresh que ya se usó solo puede ser una carrera entre peticiones o un robo, y los dos casos se tratan igual: se revocan todas las sesiones del usuario y se responde 403.',
+          why: 'La web evita la carrera compartiendo un único refresh entre peticiones, así que en la práctica este aviso significa un robo.',
+          msgs: [
+            { from: 'usr', to: 'db', label: 'revocarTodosDelUsuario' },
+            { from: 'usr', to: 'gw', label: '403 uso sospechoso', kind: 'err' },
+            { from: 'gw', to: 'nav', label: '403', kind: 'err' },
+          ],
+          code: S.svUsrRotate,
+        },
+        {
+          title: 'Nadie se queda con la sesión',
+          text: 'El refresh nuevo del atacante también queda revocado. Su access token aún vale como mucho 15 minutos; después necesita la contraseña o la cuenta de Google para volver a entrar.',
+          msgs: [{ from: 'nav', to: 'nav', label: 'limpia la sesión y va al login' }],
+          code: S.svFrontInterceptor,
+        },
+      ],
+    },
+    {
+      id: 'estadisticas-caido',
+      name: 'Estadísticas no responde',
+      fault: 'Cortar estadísticas',
+      summary:
+        'predicciones depende de estadísticas para cada cálculo. Si estadísticas cae, el fallo se queda contenido en vez de arrastrar al resto.',
+      steps: [
+        {
+          title: 'Una predicción en directo',
+          text: 'Un usuario Premium pide la predicción de un partido que se está jugando.',
+          msgs: [
+            { from: 'nav', to: 'gw', label: 'GET /predicciones/{id}/en-vivo' },
+            { from: 'gw', to: 'pred', label: '+ X-Internal-Secret' },
+          ],
+        },
+        {
+          title: 'estadísticas no contesta',
+          text: 'La llamada de OpenFeign falla o supera el tiempo límite. El circuit breaker estadisticasFeign apunta cada fallo.',
+          msgs: [
+            { from: 'pred', to: 'est', label: 'GET /internal/contexto' },
+            { from: 'est', to: 'pred', label: 'timeout', kind: 'err' },
+          ],
+          code: S.svPredFeign,
+        },
+        {
+          title: 'El circuito se abre',
+          text: 'Con varios fallos seguidos el circuito se abre y salta el fallback. Las siguientes peticiones ni siquiera intentan la llamada.',
+          why: 'Sin el circuito, cada sondeo de cada usuario mirando un partido repetía la llamada completa hasta el timeout, justo cuando estadísticas más necesita respirar.',
+          msgs: [
+            { from: 'pred', to: 'pred', label: 'circuito abierto' },
+            { from: 'pred', to: 'pred', label: 'fallbackContexto()' },
+          ],
+          code: S.svPredFallback,
+        },
+        {
+          title: 'Un 409 claro y contenido',
+          text: 'predicciones responde 409 con el motivo. El login, las cuentas y el resto de servicios siguen funcionando, y cuando estadísticas vuelve, el circuito se cierra solo.',
+          msgs: [
+            { from: 'pred', to: 'gw', label: '409 sin comunicación', kind: 'err' },
+            { from: 'gw', to: 'nav', label: '409', kind: 'err' },
+          ],
+          http: `HTTP/1.1 409 Conflict
+Content-Type: application/problem+json
+
+{
+  "type": "about:blank",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "Sin comunicación con estadísticas."
+}`,
+        },
+      ],
+    },
+    {
+      id: 'cuota-agotada',
+      name: 'Cuota de API-Football agotada',
+      fault: 'Agotar la cuota',
+      summary:
+        'El proveedor de datos cobra por petición y tiene un tope diario. Cuando se acerca al límite, la ingesta frena sola y la web sigue funcionando con lo guardado.',
+      steps: [
+        {
+          title: 'Primero paran las cargas masivas',
+          text: 'Cada respuesta de API-Football dice cuántas peticiones quedan hoy. Por debajo de 25.000, las tareas que no corren prisa (perfiles pendientes, históricos) dejan de gastar.',
+          why: 'Así un backfill largo nunca deja la cuota a cero justo cuando hace falta para el directo.',
+          msgs: [{ from: 'est', to: 'est', label: 'backfill: reserva de 25.000' }],
+          code: S.svEstQuota,
+        },
+        {
+          title: 'Después, hasta el directo',
+          text: 'Por debajo de 5.000 se para todo, incluido el directo: la tarea de cada 30 segundos comprueba la cuota y se salta el ciclo con un aviso en el log.',
+          msgs: [
+            { from: 'est', to: 'est', label: '@Scheduled cada 30 s' },
+            { from: 'est', to: 'est', label: 'menos de 5.000: salta' },
+          ],
+          code: S.svEstSched,
+        },
+        {
+          title: 'La web sigue funcionando',
+          text: 'Los usuarios no lo notan: resultados y estadísticas se sirven desde PostgreSQL. Lo único que se congela es el directo, hasta que la cuota se renueva al día siguiente.',
+          msgs: [
+            { from: 'nav', to: 'gw', label: 'GET /partidos/…' },
+            { from: 'gw', to: 'est', label: 'reenvía' },
+            { from: 'est', to: 'db', label: 'consulta' },
+            { from: 'db', to: 'est', label: 'filas', kind: 'res' },
+            { from: 'est', to: 'gw', label: '200', kind: 'res' },
+            { from: 'gw', to: 'nav', label: '200 OK', kind: 'res' },
+          ],
         },
       ],
     },

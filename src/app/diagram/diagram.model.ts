@@ -103,8 +103,11 @@ export interface Scenario {
   id: string;
   name: string;
   summary: string;
-  /** Los escenarios de fallo se marcan en rojo. */
-  tone?: 'error';
+  /**
+   * Si existe, es un fallo provocado: no sale como pestaña sino como interruptor en
+   * «Rompe el sistema», con este texto.
+   */
+  fault?: string;
   steps: Step[];
 }
 

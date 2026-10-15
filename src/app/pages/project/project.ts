@@ -5,10 +5,13 @@ import { PROJECTS, projectBySlug } from '../../data/projects';
 import { PROFILE } from '../../data/profile';
 import { DiagramComponent } from '../../diagram/diagram';
 import { Icon } from '../../shared/icon';
+import { CaloriesLab } from '../../labs/calories-lab';
+import { PredictionLab } from '../../labs/prediction-lab';
+import { RatelimitLab } from '../../labs/ratelimit-lab';
 
 @Component({
   selector: 'app-project',
-  imports: [RouterLink, DiagramComponent, Icon],
+  imports: [RouterLink, DiagramComponent, Icon, PredictionLab, RatelimitLab, CaloriesLab],
   templateUrl: './project.html',
   styleUrl: './project.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

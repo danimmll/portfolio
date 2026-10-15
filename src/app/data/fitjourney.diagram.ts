@@ -344,7 +344,7 @@ Content-Type: application/json
     {
       id: 'sesion-caducada',
       name: 'Sesión caducada',
-      tone: 'error',
+      fault: 'Caducar el token',
       summary:
         'El JWT dura 24 horas. Cuando caduca, la API responde 403 y la app limpia la sesión y vuelve al login, sin pantallas rotas.',
       steps: [
@@ -375,6 +375,94 @@ Content-Type: application/json
             { from: 'http', to: 'http', label: 'abre MainActivity' },
           ],
           code: S.fjInterceptorOut,
+        },
+      ],
+    },
+    {
+      id: 'password-mal',
+      name: 'Contraseña incorrecta',
+      fault: 'Equivocar la contraseña',
+      summary:
+        'El usuario se equivoca al escribir la contraseña. La API lo rechaza y la app lo dice sin confundirlo con una sesión caducada.',
+      steps: [
+        {
+          title: 'Login con la contraseña mal',
+          text: 'La petición recorre las mismas capas que un login normal.',
+          msgs: [
+            { from: 'ui', to: 'vm', label: 'login(email, pass)' },
+            { from: 'vm', to: 'repo', label: 'login()' },
+            { from: 'repo', to: 'http', label: 'loginUser()' },
+            { from: 'http', to: 'api', label: 'POST /api/auth/login' },
+          ],
+        },
+        {
+          title: 'bcrypt dice que no',
+          text: 'La cuenta existe, pero el hash guardado no corresponde a la contraseña recibida.',
+          msgs: [
+            { from: 'api', to: 'ctrl', label: 'authController.login' },
+            { from: 'ctrl', to: 'prisma', label: 'user.findUnique' },
+            { from: 'prisma', to: 'db', label: 'SELECT' },
+            { from: 'db', to: 'prisma', label: 'fila', kind: 'res' },
+            { from: 'prisma', to: 'ctrl', label: 'user', kind: 'res' },
+            { from: 'ctrl', to: 'ctrl', label: 'bcrypt.compare: no' },
+          ],
+          code: S.fjApiLogin,
+        },
+        {
+          title: '401: credenciales inválidas',
+          text: 'La API responde 401 y la contraseña nunca sale del servidor, ni siquiera su hash.',
+          msgs: [
+            { from: 'ctrl', to: 'api', label: '401 Credenciales inválidas', kind: 'err' },
+            { from: 'api', to: 'http', label: '401', kind: 'err' },
+          ],
+          http: `HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "error": "Credenciales inválidas"
+}`,
+        },
+        {
+          title: 'El interceptor no cierra nada',
+          text: 'Es una ruta de login, así que AuthInterceptor deja pasar el 401 sin borrar la sesión. El repositorio lo convierte en un Resource de error y la pantalla enseña el mensaje.',
+          why: 'Si el interceptor tratara este 401 como una sesión caducada, mandaría al usuario al login en bucle. Por eso login y registro quedan fuera.',
+          msgs: [
+            { from: 'http', to: 'http', label: 'ruta de login: no limpia' },
+            { from: 'http', to: 'repo', label: 'error 401', kind: 'err' },
+            { from: 'repo', to: 'vm', label: 'Resource.error', kind: 'err' },
+            { from: 'vm', to: 'ui', label: 'mensaje de error', kind: 'err' },
+          ],
+          code: S.fjInterceptorOut,
+        },
+      ],
+    },
+    {
+      id: 'sin-conexion',
+      name: 'Sin conexión',
+      fault: 'Quitar la conexión',
+      summary:
+        'El móvil se queda sin red justo al iniciar sesión. La app no se cuelga: avisa y deja volver a intentarlo.',
+      steps: [
+        {
+          title: 'La petición no llega',
+          text: 'La app lanza el login como siempre, pero la llamada no obtiene respuesta.',
+          msgs: [
+            { from: 'ui', to: 'vm', label: 'login(email, pass)' },
+            { from: 'vm', to: 'repo', label: 'login()' },
+            { from: 'repo', to: 'http', label: 'loginUser()' },
+            { from: 'http', to: 'api', label: 'sin respuesta', kind: 'err' },
+          ],
+        },
+        {
+          title: 'Retrofit avisa del fallo',
+          text: 'Retrofit llama a onFailure y el repositorio lo convierte en un Resource de error con el texto «Error de conexión». El ViewModel lo publica y la pantalla lo muestra.',
+          why: 'Las llamadas son asíncronas con enqueue: la interfaz nunca se bloquea esperando a la red.',
+          msgs: [
+            { from: 'http', to: 'repo', label: 'onFailure', kind: 'err' },
+            { from: 'repo', to: 'vm', label: 'Error de conexión', kind: 'err' },
+            { from: 'vm', to: 'ui', label: 'Resource.error', kind: 'err' },
+          ],
+          code: S.fjRepoFailure,
         },
       ],
     },

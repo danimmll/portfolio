@@ -146,6 +146,22 @@ export const SNIPPETS = {
     code: '@Override\npublic void verificarYRotarRefreshToken(Claims claimsRefresh) {\n    String jti = claimsRefresh.getId();\n\n    // revocarSiActivo() devuelve 0 tanto si el jti no existe (token forjado, o emitido antes\n    // de que existiera esta tabla y por tanto sin jti) como si ya estaba revocado (reuso de\n    // un refresh ya rotado -señal de robo-, o perdió la carrera contra otro refresh\n    // concurrente con el mismo token). Los tres casos se tratan igual: por precaución, se\n    // revocan TODAS las sesiones activas del usuario y se rechaza la petición.\n    if (jti == null || refreshTokenRepository.revocarSiActivo(jti) == 0) {\n        Integer idUsuario = claimsRefresh.get(CLAIM_ID, Integer.class);\n        if (idUsuario != null) {\n            refreshTokenRepository.revocarTodosDelUsuario(idUsuario);\n        }\n        throw new ForbiddenException(\n                "Se ha detectado un uso sospechoso de tu sesión; por seguridad, se han cerrado todas tus sesiones. Inicia sesión de nuevo.");\n    }\n}',
     url: 'https://github.com/danimmll/Scorevia/blob/main/scorevia-backend/Microservicio-usuarios-roles/src/main/java/usuariosroles/services/jwt/JwtTokenServiceImpl.java#L108-L125',
   },
+  svPredFallback: {
+    file: 'EstadisticasFeignGateway.java',
+    path: 'scorevia-backend/Microservicio-predicciones/src/main/java/predicciones/services/prediction/EstadisticasFeignGateway.java',
+    lang: 'java',
+    start: 66,
+    code: 'private FormaPrediccionDTO fallbackContexto(Integer idPartido, Throwable causa) {\n    CircuitBreakerFallbackSupport.relanzarSiEsErrorDeNegocio(causa);\n    log.error("Circuito abierto o fallo de comunicación al traer el contexto de predicción del partido {}: {}",\n            idPartido, causa.getMessage());\n    throw new ConflictException("Sin comunicación con estadísticas.");\n}',
+    url: 'https://github.com/danimmll/Scorevia/blob/main/scorevia-backend/Microservicio-predicciones/src/main/java/predicciones/services/prediction/EstadisticasFeignGateway.java#L66-L71',
+  },
+  svEstQuota: {
+    file: 'ApiFootballClient.java',
+    path: 'scorevia-backend/Microservicio-estadisticas/src/main/java/estadisticas/services/external/ApiFootballClient.java',
+    lang: 'java',
+    start: 104,
+    code: '// Para lo urgente (ingesta del día y partidos en vivo). Ni siquiera esto baja del\n// suelo duro: si se llega ahí, es que algo se ha desmadrado y conviene que pare solo.\npublic synchronized boolean hayCuotaDisponible() {\n    return hayCuotaDisponible(reservaIntocable);\n}\n\n// Los jobs de backfill/mantenimiento (perfiles pendientes, entidades secundarias,\n// eventos históricos...) no son urgentes: pueden parar un poco antes de agotar la\n// cuota por completo, dejando un colchón reservado para la ingesta del día y partidos\n// en vivo, que si son prioritarios. Sin esto, un backfill largo corriendo antes podía\n// dejar la cuota a 0 justo cuando hiciera falta para lo importante.\npublic synchronized boolean hayCuotaDisponibleParaBackfill() {\n    return hayCuotaDisponible(reservaDiaria);\n}',
+    url: 'https://github.com/danimmll/Scorevia/blob/main/scorevia-backend/Microservicio-estadisticas/src/main/java/estadisticas/services/external/ApiFootballClient.java#L104-L117',
+  },
   svGwFallback: {
     file: 'FallbackController.java',
     path: 'scorevia-backend/Gateway/src/main/java/gateway/fallback/FallbackController.java',
@@ -297,6 +313,14 @@ export const SNIPPETS = {
     start: 56,
     code: 'Response response = chain.proceed(requestBuilder.build());\n\nString path = originalRequest.url().encodedPath();\nboolean isAuthRoute = path.contains("auth/login") || path.contains("auth/register");\n\nif ((response.code() == 401 || response.code() == 403) && !isAuthRoute) {\n    prefs.clearSession();\n\n    Intent intent = new Intent(context, MainActivity.class);\n    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);\n    context.startActivity(intent);\n}\n\nreturn response;',
     url: 'https://github.com/danimmll/FitJourneyProject/blob/main/FitJourney/app/src/main/java/es/iesagora/fitjourney/data/remote/AuthInterceptor.java#L56-L69',
+  },
+  fjRepoFailure: {
+    file: 'UserRepository.java',
+    path: 'FitJourney/app/src/main/java/es/iesagora/fitjourney/data/repositories/UserRepository.java',
+    lang: 'java',
+    start: 209,
+    code: '@Override\npublic void onFailure(@NonNull Call<AccessResponse> call,\n                      @NonNull Throwable t) {\n\n    callback.onResult(Resource.error(ERROR_CONEXION + t.getMessage()));\n}',
+    url: 'https://github.com/danimmll/FitJourneyProject/blob/main/FitJourney/app/src/main/java/es/iesagora/fitjourney/data/repositories/UserRepository.java#L209-L214',
   },
   fjPrefsClear: {
     file: 'PreferencesRepository.java',

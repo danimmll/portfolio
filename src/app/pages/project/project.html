@@ -38,9 +38,9 @@
       <div class="block-head">
         <h2 id="dentro">Cómo funciona por dentro</h2>
         <p>
-          Elige un flujo y avanza paso a paso, o dale a reproducir. En ámbar, lo que va; en azul, lo
-          que vuelve; en rojo, los errores. Cada paso enseña el código real del repositorio y puedes
-          pulsar cualquier pieza para ver qué hace.
+          Elige un flujo y avanza paso a paso, o dale a reproducir: en ámbar lo que va, en azul lo
+          que vuelve y en rojo los errores. Pulsa cualquier pieza para ver qué hace, o rompe algo y
+          mira cómo reacciona el sistema.
         </p>
       </div>
       <app-diagram
@@ -51,6 +51,33 @@
         [startView]="vista()"
       />
     </section>
+
+    @if (p.labs.length) {
+      <section class="block" aria-labelledby="pruebalo">
+        <div class="block-head">
+          <h2 id="pruebalo">Pruébalo tú</h2>
+          <p>
+            Partes del proyecto traídas al navegador con la misma lógica que el código original,
+            para que juegues con ellas.
+          </p>
+        </div>
+        <div class="labs">
+          @for (lab of p.labs; track lab) {
+            @switch (lab) {
+              @case ('prediction') {
+                <app-prediction-lab />
+              }
+              @case ('ratelimit') {
+                <app-ratelimit-lab />
+              }
+              @case ('calories') {
+                <app-calories-lab />
+              }
+            }
+          }
+        </div>
+      </section>
+    }
 
     <section class="block" aria-labelledby="decisiones">
       <h2 id="decisiones" class="block-title">Decisiones técnicas</h2>

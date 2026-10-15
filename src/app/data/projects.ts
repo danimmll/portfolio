@@ -15,6 +15,8 @@ export interface Project {
   repo: string;
   extraLink?: { label: string; href: string };
   diagram: Diagram;
+  /** Demos interactivas con la lógica real del proyecto. */
+  labs: ('prediction' | 'ratelimit' | 'calories')[];
 }
 
 export const PROJECTS: Project[] = [
@@ -76,6 +78,7 @@ export const PROJECTS: Project[] = [
     ],
     repo: 'https://github.com/danimmll/Scorevia',
     diagram: SCOREVIA_DIAGRAM,
+    labs: ['prediction', 'ratelimit'],
   },
   {
     slug: 'fitjourney',
@@ -122,6 +125,7 @@ export const PROJECTS: Project[] = [
       href: 'https://github.com/danimmll/FitJourneyProject/raw/main/FitJourney/app/release/app-release.apk',
     },
     diagram: FITJOURNEY_DIAGRAM,
+    labs: ['calories'],
   },
 ];
 

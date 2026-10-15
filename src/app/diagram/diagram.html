@@ -2,21 +2,16 @@
 @let current = step();
 
 <div class="bar">
-  <div class="scenarios" role="tablist" aria-label="Escenarios" (keydown)="onTabKey($event)">
-    @for (s of dg.scenarios; track s.id; let i = $index) {
+  <div class="flows" role="group" aria-label="Flujos">
+    @for (f of flows(); track f.s.id) {
       <button
         type="button"
-        role="tab"
         class="scn"
-        [class.is-error]="s.tone === 'error'"
-        [id]="uid() + '-tab-' + i"
-        [attr.aria-selected]="i === scenarioIndex()"
-        [attr.aria-controls]="uid() + '-panel'"
-        [attr.tabindex]="i === scenarioIndex() ? 0 : -1"
-        (click)="selectScenario(i)"
+        [attr.aria-pressed]="f.i === scenarioIndex()"
+        (click)="selectScenario(f.i)"
       >
         <span class="scn-dot" aria-hidden="true"></span>
-        {{ s.name }}
+        {{ f.s.name }}
       </button>
     }
   </div>
@@ -43,15 +38,39 @@
   </div>
 </div>
 
-<div
-  class="panel"
-  role="tabpanel"
-  [id]="uid() + '-panel'"
-  [attr.aria-labelledby]="uid() + '-tab-' + scenarioIndex()"
->
+@if (faults().length) {
+  <div class="breaker" [class.is-on]="isFault()">
+    <div class="breaker-head">
+      <app-icon name="alert" />
+      <p class="breaker-title">Rompe el sistema</p>
+      <p class="breaker-hint">Activa un fallo y mira cómo reacciona, paso a paso.</p>
+    </div>
+    <ul class="switches">
+      @for (f of faults(); track f.s.id) {
+        <li>
+          <button
+            type="button"
+            role="switch"
+            class="switch"
+            [attr.aria-checked]="f.i === scenarioIndex()"
+            (click)="toggleFault(f.i)"
+          >
+            <span class="knob" aria-hidden="true"></span>
+            {{ f.s.fault }}
+          </button>
+        </li>
+      }
+    </ul>
+  </div>
+}
+
+<div class="panel" [attr.aria-label]="scenario().name">
+  @if (isFault()) {
+    <p class="fault-name"><app-icon name="alert" />{{ scenario().name }}</p>
+  }
   <p class="summary">{{ scenario().summary }}</p>
 
-  <div class="board" [class.has-inspector]="!!selected()">
+  <div class="board" [class.has-inspector]="!!selected()" [class.is-fault]="isFault()">
     @if (view() === 'arch') {
       <figure class="arch">
         @for (l of layouts; track l) {
@@ -281,8 +300,43 @@
       }
     </div>
 
-    <div class="source">
-      <div class="source-tabs" role="tablist" aria-label="Detalle del paso">
+    <div class="travel">
+      <p class="travel-title">Qué viaja en este paso</p>
+      <ol class="msgs">
+        @for (m of current.msgs; track $index) {
+          @let k = msgKindOf(m);
+          <li class="msg" [class]="'msg k-' + k">
+            <span class="msg-kind">{{ kindLabel(k) }}</span>
+            <span class="msg-route">
+              @if (k === 'self') {
+                {{ nodeName(m.from) }}
+              } @else {
+                {{ nodeName(m.from) }} <span aria-hidden="true">→</span
+                ><span class="visually-hidden">a</span> {{ nodeName(m.to) }}
+              }
+            </span>
+            <code class="msg-label">{{ m.label }}</code>
+          </li>
+        }
+      </ol>
+      @if (tabs().length) {
+        <button
+          type="button"
+          class="code-toggle"
+          [attr.aria-expanded]="showCode()"
+          [attr.aria-controls]="uid() + '-source'"
+          (click)="toggleCode()"
+        >
+          <app-icon name="code" />
+          {{ showCode() ? 'Ocultar el código' : 'Ver el código de este paso' }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (showCode() && tabs().length) {
+    <div class="source" [id]="uid() + '-source'">
+      <div class="source-tabs" role="tablist" aria-label="Código del paso">
         @for (t of tabs(); track t) {
           <button
             type="button"
@@ -296,52 +350,30 @@
         }
       </div>
 
-      @switch (tab()) {
-        @case ('code') {
-          @let c = current.code!;
-          <div class="code-head">
-            <span class="code-path" [attr.title]="c.path">{{ c.path }}</span>
-            <a class="code-link" [href]="c.url" target="_blank" rel="noopener">
-              Ver en GitHub
-              <app-icon name="external" />
-            </a>
-          </div>
-          <pre
-            class="code"
-            tabindex="0"
-          ><code>@for (line of codeLines(); track $index; let i = $index) {<span class="ln">{{ c.start + i }}</span>@for (tok of line; track $index) {<span [class]="tok.k ? 't-' + tok.k : null">{{ tok.t }}</span>}{{ '\n' }}}</code></pre>
-        }
-        @case ('http') {
-          <div class="code-head">
-            <span class="code-path">Forma real, datos de ejemplo</span>
-          </div>
-          <pre
-            class="code code--http"
-            tabindex="0"
-          ><code>@for (line of httpLines(); track $index) {@for (tok of line; track $index) {<span [class]="tok.k ? 't-' + tok.k : null">{{ tok.t }}</span>}{{ '\n' }}}</code></pre>
-        }
-        @default {
-          <ol class="msgs">
-            @for (m of current.msgs; track $index) {
-              @let k = msgKindOf(m);
-              <li class="msg" [class]="'msg k-' + k">
-                <span class="msg-kind">{{ kindLabel(k) }}</span>
-                <span class="msg-route">
-                  @if (k === 'self') {
-                    {{ nodeName(m.from) }}
-                  } @else {
-                    {{ nodeName(m.from) }} <span aria-hidden="true">→</span
-                    ><span class="visually-hidden">a</span> {{ nodeName(m.to) }}
-                  }
-                </span>
-                <code class="msg-label">{{ m.label }}</code>
-              </li>
-            }
-          </ol>
-        }
+      @if (tab() === 'code') {
+        @let c = current.code!;
+        <div class="code-head">
+          <span class="code-path" [attr.title]="c.path">{{ c.path }}</span>
+          <a class="code-link" [href]="c.url" target="_blank" rel="noopener">
+            Ver en GitHub
+            <app-icon name="external" />
+          </a>
+        </div>
+        <pre
+          class="code"
+          tabindex="0"
+        ><code>@for (line of codeLines(); track $index; let i = $index) {<span class="ln">{{ c.start + i }}</span>@for (tok of line; track $index) {<span [class]="tok.k ? 't-' + tok.k : null">{{ tok.t }}</span>}{{ '\n' }}}</code></pre>
+      } @else {
+        <div class="code-head">
+          <span class="code-path">Forma real, datos de ejemplo</span>
+        </div>
+        <pre
+          class="code code--http"
+          tabindex="0"
+        ><code>@for (line of httpLines(); track $index) {@for (tok of line; track $index) {<span [class]="tok.k ? 't-' + tok.k : null">{{ tok.t }}</span>}{{ '\n' }}}</code></pre>
       }
     </div>
-  </div>
+  }
 </div>
 
 <ng-template #plano let-l>

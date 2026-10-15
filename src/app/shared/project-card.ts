@@ -45,15 +45,29 @@ import { Icon } from './icon';
             <h4>Flujos que puedes recorrer</h4>
             <ul>
               @for (s of p.diagram.scenarios; track s.id) {
-                <li>
-                  <a
-                    [routerLink]="['/proyectos', p.slug]"
-                    [queryParams]="{ escenario: s.id }"
-                    [class.is-error]="s.tone === 'error'"
-                  >
-                    <span class="dot" aria-hidden="true"></span>{{ s.name }}
-                  </a>
-                </li>
+                @if (!s.fault) {
+                  <li>
+                    <a [routerLink]="['/proyectos', p.slug]" [queryParams]="{ escenario: s.id }">
+                      <span class="dot" aria-hidden="true"></span>{{ s.name }}
+                    </a>
+                  </li>
+                }
+              }
+            </ul>
+            <h4>Fallos que puedes provocar</h4>
+            <ul>
+              @for (s of p.diagram.scenarios; track s.id) {
+                @if (s.fault) {
+                  <li>
+                    <a
+                      class="is-error"
+                      [routerLink]="['/proyectos', p.slug]"
+                      [queryParams]="{ escenario: s.id }"
+                    >
+                      <span class="dot" aria-hidden="true"></span>{{ s.fault }}
+                    </a>
+                  </li>
+                }
               }
             </ul>
           </div>
@@ -182,10 +196,10 @@ import { Icon } from './icon';
     }
 
     .flows {
-      margin-top: 22px;
+      margin-top: 4px;
 
       h4 {
-        margin: 0 0 10px;
+        margin: 18px 0 10px;
         font: 600 0.95rem/1.3 var(--font-body);
         letter-spacing: 0;
         color: var(--text-2);

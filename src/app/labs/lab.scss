@@ -1,0 +1,182 @@
+// Estilos compartidos por las demos de «Pruébalo tú».
+
+:host {
+  display: block;
+}
+
+.lab {
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.lab-head {
+  padding: 22px 24px 0;
+
+  h3 {
+    margin: 0;
+    font-size: var(--step-2);
+  }
+
+  p {
+    max-width: 70ch;
+    margin: 8px 0 0;
+    color: var(--text-2);
+  }
+}
+
+.lab-body {
+  display: grid;
+  gap: 24px;
+  padding: 22px 24px 24px;
+
+  @media (min-width: 900px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 32px;
+  }
+}
+
+.lab-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--line);
+  font-size: 0.85rem;
+  color: var(--text-3);
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+
+  & + fieldset {
+    margin-top: 22px;
+  }
+}
+
+legend {
+  margin-bottom: 10px;
+  padding: 0;
+  font-weight: 650;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-top: 12px;
+
+  input[type='range'] {
+    grid-column: 1 / -1;
+  }
+}
+
+.field-label {
+  color: var(--text-2);
+  font-size: 0.92rem;
+}
+
+output,
+.value {
+  font: 600 0.92rem/1 var(--font-mono);
+  color: var(--text);
+}
+
+input[type='range'] {
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--req);
+  cursor: pointer;
+}
+
+.note {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-3);
+}
+
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  padding: 3px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--bg-raised);
+
+  button {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-2);
+    font: 500 0.9rem/1 var(--font-body);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--text);
+    }
+
+    &[aria-pressed='true'] {
+      background: var(--surface-3);
+      color: var(--text);
+    }
+  }
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  button {
+    display: inline-grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--line-2);
+    border-radius: 9px;
+    background: var(--surface-2);
+    color: var(--text);
+    font: 600 1rem/1 var(--font-body);
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+
+  .value {
+    min-width: 1.6em;
+    text-align: center;
+    font-size: 1.1rem;
+  }
+}
+
+.big {
+  margin: 0;
+  font: 700 clamp(2.4rem, 1.8rem + 2vw, 3.4rem) / 1 var(--font-display);
+  letter-spacing: -0.03em;
+}
+
+.result-label {
+  margin: 0 0 6px;
+  color: var(--text-2);
+  font-size: 0.92rem;
+}
