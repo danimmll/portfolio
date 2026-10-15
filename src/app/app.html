@@ -1,16 +1,44 @@
 <a class="skip" href="#contenido">Saltar al contenido</a>
 
-<header class="top">
+<header class="top" [class.is-open]="menuOpen()">
   <div class="wrap top-inner">
-    <a class="brand" routerLink="/">{{ profile.name }}</a>
-    <nav aria-label="Secciones">
+    <a class="brand" routerLink="/" aria-label="Daniel Martín López, inicio">
+      <span class="mono" aria-hidden="true">DM</span>
+      <span class="brand-name">Daniel Martín</span>
+    </a>
+
+    <nav class="nav" id="menu" aria-label="Principal">
       <ul>
-        <li><a routerLink="/" fragment="proyectos">Proyectos</a></li>
-        <li><a routerLink="/" fragment="experiencia">Experiencia</a></li>
-        <li><a routerLink="/" fragment="contacto">Contacto</a></li>
+        @for (item of nav; track item.path) {
+          <li>
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="is-active"
+              [routerLinkActiveOptions]="{ exact: item.exact }"
+              ariaCurrentWhenActive="page"
+            >
+              {{ item.label }}
+            </a>
+          </li>
+        }
       </ul>
     </nav>
-    <a class="cv-link" [href]="profile.cv" download>CV en PDF</a>
+
+    <a class="btn btn--small cv-btn" [href]="profile.cv" download>
+      <app-icon name="download" />
+      <span>Descargar CV</span>
+    </a>
+
+    <button
+      type="button"
+      class="menu-btn"
+      (click)="toggleMenu()"
+      [attr.aria-expanded]="menuOpen()"
+      aria-controls="menu"
+    >
+      <app-icon [name]="menuOpen() ? 'close' : 'menu'" />
+      <span class="visually-hidden">Menú</span>
+    </button>
   </div>
 </header>
 
@@ -20,10 +48,21 @@
 
 <footer class="foot">
   <div class="wrap foot-inner">
-    <p>{{ profile.name }}, {{ year }}.</p>
-    <p>
-      Hecho con Angular y desplegado en Vercel.
-      <a href="https://github.com/danimmll/portfolio">Código de esta web</a>
+    <div class="foot-id">
+      <span class="mono" aria-hidden="true">DM</span>
+      <p>{{ profile.name }}, {{ year }}</p>
+    </div>
+    <ul class="foot-links">
+      <li><a [href]="profile.github" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a [href]="profile.linkedin" target="_blank" rel="noopener">LinkedIn</a></li>
+      <li><a [href]="'mailto:' + profile.email">Correo</a></li>
+      <li><a [href]="profile.cv" download>CV en PDF</a></li>
+    </ul>
+    <p class="foot-note">
+      Hecha con Angular y desplegada en Vercel.
+      <a href="https://github.com/danimmll/portfolio" target="_blank" rel="noopener"
+        >Código de esta web</a
+      >
     </p>
   </div>
 </footer>

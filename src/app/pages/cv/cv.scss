@@ -1,0 +1,181 @@
+.head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.layout {
+  display: grid;
+  gap: 48px;
+
+  @media (min-width: 980px) {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    gap: 64px;
+    align-items: start;
+  }
+}
+
+.main {
+  display: grid;
+  gap: 56px;
+}
+
+.title {
+  margin: 0 0 22px;
+  font-size: var(--step-3);
+}
+
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid var(--line-2);
+}
+
+.entry {
+  position: relative;
+  display: grid;
+  gap: 6px 28px;
+  padding: 0 0 34px 26px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 7px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--req);
+  }
+
+  &:last-child {
+    padding-bottom: 4px;
+  }
+
+  @media (min-width: 640px) {
+    grid-template-columns: 9.5rem 1fr;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    letter-spacing: -0.015em;
+  }
+}
+
+.period {
+  margin: 0;
+  padding-top: 2px;
+  font-size: 0.92rem;
+  color: var(--text-3);
+}
+
+.where {
+  margin: 4px 0 0;
+  color: var(--text-2);
+}
+
+.points {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: var(--text-2);
+
+  li + li {
+    margin-top: 6px;
+  }
+}
+
+.entry .chips {
+  margin-top: 14px;
+}
+
+.side {
+  display: grid;
+  gap: 14px;
+
+  @media (min-width: 980px) {
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+  }
+}
+
+.box {
+  padding: 20px 22px;
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.box-title {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.facts {
+  margin: 0;
+
+  div {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: 12px;
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+
+    &:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+  }
+
+  dt {
+    color: var(--text-3);
+    font-size: 0.92rem;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+}
+
+.plain {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    gap: 2px;
+  }
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.muted {
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+
+.box-link {
+  display: grid;
+  gap: 4px;
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: var(--req-line);
+  }
+
+  .strong {
+    color: var(--req);
+  }
+}

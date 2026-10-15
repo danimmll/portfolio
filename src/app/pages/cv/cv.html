@@ -1,0 +1,109 @@
+<div class="page wrap">
+  <header class="page-head">
+    <h1>Currículum</h1>
+    <p>
+      Desarrollador Full Stack Java con el foco puesto en el backend. Vengo de DAM y de unas
+      prácticas en VIEWNEXT, y ahora compagino Ingeniería Informática con la búsqueda de mi
+      siguiente trabajo.
+    </p>
+    <div class="head-actions">
+      <a class="btn btn--primary" [href]="profile.cv" download>
+        <app-icon name="download" />
+        Descargar CV en PDF
+      </a>
+      <a class="btn" [href]="profile.cv" target="_blank" rel="noopener">
+        <app-icon name="external" />
+        Abrir en otra pestaña
+      </a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="main">
+      <section aria-labelledby="exp">
+        <h2 id="exp" class="title">Experiencia</h2>
+        <ol class="timeline">
+          @for (e of experience; track e.role) {
+            <li class="entry">
+              <p class="period">{{ e.period }}</p>
+              <div class="entry-body">
+                <h3>{{ e.role }}</h3>
+                <p class="where">{{ e.company }}, {{ e.place }}</p>
+                @if (e.points.length) {
+                  <ul class="points">
+                    @for (pt of e.points; track pt) {
+                      <li>{{ pt }}</li>
+                    }
+                  </ul>
+                }
+                <ul class="chips" aria-label="Tecnologías">
+                  @for (t of e.tags; track t) {
+                    <li class="chip">{{ t }}</li>
+                  }
+                </ul>
+              </div>
+            </li>
+          }
+        </ol>
+      </section>
+
+      <section aria-labelledby="edu">
+        <h2 id="edu" class="title">Formación</h2>
+        <ol class="timeline">
+          @for (e of education; track e.title) {
+            <li class="entry">
+              <p class="period">{{ e.period }}</p>
+              <div class="entry-body">
+                <h3>{{ e.title }}</h3>
+                <p class="where">{{ e.center }}</p>
+              </div>
+            </li>
+          }
+        </ol>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="box" aria-labelledby="datos">
+        <h2 id="datos" class="box-title">Datos</h2>
+        <dl class="facts">
+          @for (f of facts; track f.label) {
+            <div>
+              <dt>{{ f.label }}</dt>
+              <dd>{{ f.value }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      <section class="box" aria-labelledby="idiomas">
+        <h2 id="idiomas" class="box-title">Idiomas</h2>
+        <ul class="plain">
+          @for (l of languages; track l.name) {
+            <li>
+              <span class="strong">{{ l.name }}</span>
+              <span class="muted">{{ l.level }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="box" aria-labelledby="cursos">
+        <h2 id="cursos" class="box-title">Formación complementaria</h2>
+        <ul class="plain">
+          @for (c of courses; track c.title) {
+            <li>
+              <span class="strong">{{ c.title }}</span>
+              <span class="muted">{{ c.center }}, {{ c.period }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <a class="box box-link" routerLink="/stack">
+        <span class="strong">Mira mi stack</span>
+        <span class="muted">Cada tecnología y el paso del diagrama donde la uso.</span>
+      </a>
+    </aside>
+  </div>
+</div>

@@ -1,27 +1,32 @@
 # Portfolio de Daniel Martín López
 
-Web personal con mis dos proyectos principales, [ScoreVia](https://github.com/danimmll/Scorevia) y [FitJourney](https://github.com/danimmll/FitJourneyProject). En lugar de capturas, cada proyecto tiene un diagrama interactivo: eliges una situación (iniciar sesión, pedir una predicción, registrar un entrenamiento…) y el diagrama marca, paso a paso, qué pieza del sistema trabaja, por qué está hecho así y en qué parte del código está.
+Web personal con mis dos proyectos principales, [ScoreVia](https://github.com/danimmll/Scorevia) y [FitJourney](https://github.com/danimmll/FitJourneyProject). En vez de capturas, cada proyecto tiene un diagrama interactivo de cómo funciona por dentro:
+
+- **Flujos reales**: iniciar sesión con Google, una predicción en directo, una sesión caducada que se renueva sola, la ingesta automática de datos, un servicio que se cae… y en FitJourney, el login y el registro de un entrenamiento capa por capa.
+- **Dos vistas**: arquitectura, con paquetes animados que llevan la etiqueta de lo que viaja (ámbar la ida, azul la vuelta, rojo los errores), y diagrama de secuencia.
+- **Código real en cada paso**: el fragmento exacto del repositorio, con su número de línea y enlace a GitHub, más la petición HTTP de ejemplo.
+- **Inspector de piezas**: pulsando cualquier caja se ve qué hace, con qué está hecha y dónde está su código.
+- **Enlaces profundos**: `?escenario=…&paso=…&vista=secuencia` abre el diagrama justo en ese punto. La página de stack enlaza cada tecnología con el paso donde se usa.
 
 ## Stack
 
 - Angular 21 con componentes standalone, signals y sin Zone.js.
-- Prerenderizado estático en el build: cada página sale como HTML ya generado, sin servidor.
-- SCSS con tokens propios y modo oscuro automático.
-- Diagramas en SVG generados a partir de datos; la animación va con `requestAnimationFrame` y respeta `prefers-reduced-motion`.
-- Despliegue en Vercel.
+- Prerenderizado estático de todas las páginas en el build: no hace falta servidor.
+- SVG generado a partir de datos, con la animación en `requestAnimationFrame`; respeta `prefers-reduced-motion`.
+- Resaltado de código propio, sin dependencias.
+- Desplegada en Vercel.
 
 ## Cómo está organizado
 
 ```
 src/app/
-├── data/          perfil, experiencia, proyectos y los dos diagramas (solo datos)
-├── diagram/       componente del diagrama interactivo, geometría de las conexiones y miniatura
-└── pages/
-    ├── home/      portada: presentación, proyectos, experiencia, formación y contacto
-    └── project/   página de cada proyecto con su diagrama y sus decisiones técnicas
+├── data/          perfil, stack, proyectos, los dos diagramas y los fragmentos de código
+├── diagram/       diagrama interactivo, miniatura animada, geometría y resaltado de código
+├── shared/        iconos y tarjeta de proyecto
+└── pages/         inicio, proyectos, proyecto, CV, stack y contacto
 ```
 
-Cada diagrama se describe en un fichero de datos (`scorevia.diagram.ts`, `fitjourney.diagram.ts`): las piezas, sus posiciones en escritorio y en móvil, las conexiones y los escenarios con sus pasos. El componente se encarga de dibujar, enrutar las líneas y animar el recorrido, así que añadir un escenario nuevo no requiere tocar código del componente.
+Cada diagrama es un fichero de datos (`scorevia.diagram.ts`, `fitjourney.diagram.ts`): piezas con su posición en escritorio y en móvil, conexiones y escenarios. Cada paso es una lista de mensajes `{ from, to, label, kind }`; el componente calcula por qué conexión va cada uno, lo anima y genera la vista de secuencia. Añadir un flujo nuevo no requiere tocar el componente.
 
 ## Ejecutarlo en local
 

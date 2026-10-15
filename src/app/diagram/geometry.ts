@@ -9,16 +9,15 @@ export interface EdgeGeometry {
   pts: Pt[];
   d: string;
   length: number;
-  /** Centro del tramo más largo: ahí va la etiqueta, si la hay. */
+  /** Centro del tramo más largo: ahí se aparcan las etiquetas de los mensajes. */
   labelAt: Pt;
 }
 
-const center = (b: Box): Pt => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
+export const center = (b: Box): Pt => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
 
 /**
- * Traza una conexión en ángulo recto entre dos cajas, como en un plano: recta si están
- * alineadas, con un codo si no. `elbow` fija la x del codo cuando el automático caería
- * encima de otra línea.
+ * Traza una conexión en ángulo recto entre dos cajas: recta si están alineadas, con un
+ * codo si no. `elbow` fija la x del codo cuando el automático cae encima de otra línea.
  */
 export function route(a: Box, b: Box, elbow?: number): EdgeGeometry {
   const ca = center(a);
@@ -86,5 +85,7 @@ export function pointAt(geo: EdgeGeometry, t: number): Pt {
   }
   return geo.pts[geo.pts.length - 1];
 }
+
+export const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
 
 const round = (n: number) => Math.round(n * 10) / 10;

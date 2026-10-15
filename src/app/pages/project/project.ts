@@ -4,17 +4,21 @@ import { Router, RouterLink } from '@angular/router';
 import { PROJECTS, projectBySlug } from '../../data/projects';
 import { PROFILE } from '../../data/profile';
 import { DiagramComponent } from '../../diagram/diagram';
+import { Icon } from '../../shared/icon';
 
 @Component({
   selector: 'app-project',
-  imports: [RouterLink, DiagramComponent],
+  imports: [RouterLink, DiagramComponent, Icon],
   templateUrl: './project.html',
   styleUrl: './project.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectPage {
-  /** Viene de la ruta gracias a withComponentInputBinding. */
+  /** Parámetros de ruta y de consulta, gracias a withComponentInputBinding. */
   readonly slug = input.required<string>();
+  readonly escenario = input<string>();
+  readonly paso = input<string>();
+  readonly vista = input<string>();
 
   private readonly router = inject(Router);
   private readonly title = inject(Title);
@@ -31,7 +35,7 @@ export class ProjectPage {
     effect(() => {
       const p = this.project();
       if (!p) {
-        this.router.navigateByUrl('/');
+        this.router.navigateByUrl('/proyectos');
         return;
       }
       this.title.setTitle(`${p.name} · ${PROFILE.name}`);

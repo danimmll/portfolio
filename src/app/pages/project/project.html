@@ -1,63 +1,93 @@
 @if (project(); as p) {
-  <article class="wrap">
-    <p class="back"><a routerLink="/" fragment="proyectos">Volver a los proyectos</a></p>
+  <article class="page wrap">
+    <nav class="crumbs" aria-label="Migas de pan">
+      <a routerLink="/proyectos"><app-icon name="back" />Proyectos</a>
+    </nav>
 
     <header class="head">
-      <h1 class="name">{{ p.name }}</h1>
-      <p class="tagline">{{ p.tagline }}</p>
-      <p class="desc">{{ p.description }}</p>
-      <div class="links">
-        <a class="btn btn--solid" [href]="p.repo">Código en GitHub</a>
-        @if (p.extraLink) {
-          <a class="btn" [href]="p.extraLink.href">{{ p.extraLink.label }}</a>
-        }
+      <div class="head-main">
+        <h1>{{ p.name }}</h1>
+        <p class="tagline">{{ p.tagline }}</p>
+        <p class="kind">{{ p.kind }}</p>
+        <p class="desc">{{ p.description }}</p>
+        <div class="actions">
+          <a class="btn btn--primary" [href]="p.repo" target="_blank" rel="noopener">
+            <app-icon name="code" />
+            Código en GitHub
+          </a>
+          @if (p.extraLink; as l) {
+            <a class="btn" [href]="l.href">
+              <app-icon name="download" />
+              {{ l.label }}
+            </a>
+          }
+        </div>
       </div>
-    </header>
 
-    <section class="block" aria-labelledby="t-dentro">
-      <h2 id="t-dentro" class="section-title">Cómo funciona por dentro</h2>
-      <p class="lead">
-        Elige una situación y sigue el recorrido: en rojo, la parte del sistema que trabaja en cada
-        paso. Todo lo que aparece está sacado del código del repositorio.
-      </p>
-      <app-diagram [diagram]="p.diagram" [uid]="p.slug" />
-    </section>
-
-    <section class="block" aria-labelledby="t-decisiones">
-      <h2 id="t-decisiones" class="section-title">Decisiones técnicas</h2>
-      <div class="decisions">
-        @for (d of p.decisions; track d.title) {
-          <div class="decision">
-            <h3>{{ d.title }}</h3>
-            <p>{{ d.text }}</p>
+      <dl class="metrics">
+        @for (m of p.metrics; track m.label) {
+          <div>
+            <dt>{{ m.label }}</dt>
+            <dd>{{ m.value }}</dd>
           </div>
         }
+      </dl>
+    </header>
+
+    <section class="block" aria-labelledby="dentro">
+      <div class="block-head">
+        <h2 id="dentro">Cómo funciona por dentro</h2>
+        <p>
+          Elige un flujo y avanza paso a paso, o dale a reproducir. En ámbar, lo que va; en azul, lo
+          que vuelve; en rojo, los errores. Cada paso enseña el código real del repositorio y puedes
+          pulsar cualquier pieza para ver qué hace.
+        </p>
+      </div>
+      <app-diagram
+        [diagram]="p.diagram"
+        [uid]="p.slug"
+        [startScenario]="escenario()"
+        [startStep]="paso()"
+        [startView]="vista()"
+      />
+    </section>
+
+    <section class="block" aria-labelledby="decisiones">
+      <h2 id="decisiones" class="block-title">Decisiones técnicas</h2>
+      <ul class="decisions">
+        @for (d of p.decisions; track d.title) {
+          <li>
+            <h3>{{ d.title }}</h3>
+            <p>{{ d.text }}</p>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="block" aria-labelledby="ficha">
+      <h2 id="ficha" class="block-title">Ficha</h2>
+      <div class="sheet">
+        <dl class="facts">
+          @for (f of p.facts; track f.label) {
+            <div>
+              <dt>{{ f.label }}</dt>
+              <dd>{{ f.value }}</dd>
+            </div>
+          }
+        </dl>
+        <ul class="chips" aria-label="Tecnologías">
+          @for (t of p.stack; track t) {
+            <li class="chip">{{ t }}</li>
+          }
+        </ul>
       </div>
     </section>
 
-    <section class="block ficha" aria-labelledby="t-ficha">
-      <h2 id="t-ficha" class="section-title">Ficha</h2>
-      <dl class="cajetin">
-        <dt>Proyecto</dt>
-        <dd>{{ p.name }}</dd>
-        @for (f of p.facts; track f.label) {
-          <dt>{{ f.label }}</dt>
-          <dd>{{ f.value }}</dd>
-        }
-        <dt>Autor</dt>
-        <dd>Daniel Martín López</dd>
-        <dt>Plano</dt>
-        <dd>{{ p.sheet }}</dd>
-      </dl>
-    </section>
-
-    @if (nextProject(); as n) {
-      <nav class="next" aria-label="Otro proyecto">
-        <a [routerLink]="['/proyectos', n.slug]">
-          <span class="next-label">{{ n.sheet }}</span>
-          <span class="next-name">{{ n.name }}</span>
-        </a>
-      </nav>
-    }
+    @let next = nextProject();
+    <a class="next" [routerLink]="['/proyectos', next.slug]">
+      <span class="next-label">Siguiente proyecto</span>
+      <span class="next-name">{{ next.name }}</span>
+      <span class="next-tag">{{ next.tagline }}</span>
+    </a>
   </article>
 }
