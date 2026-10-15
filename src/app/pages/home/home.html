@@ -67,18 +67,3 @@
     }
   </div>
 </section>
-
-<section class="section wrap" aria-labelledby="mas-title">
-  <h2 id="mas-title" class="section-title">Más sobre mí</h2>
-  <ul class="sections">
-    @for (s of sections; track s.path) {
-      <li>
-        <a class="sec" [routerLink]="s.path">
-          <span class="sec-icon"><app-icon [name]="s.icon" /></span>
-          <span class="sec-title">{{ s.title }}</span>
-          <span class="sec-text">{{ s.text }}</span>
-        </a>
-      </li>
-    }
-  </ul>
-</section>

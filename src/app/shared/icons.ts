@@ -21,12 +21,13 @@ export const ICONS = {
   orm: 'M4 5h16v14H4z M4 10h16 M4 15h16 M10 5v14',
 
   // Interfaz
+  home: 'M4 10.5L12 4l8 6.5 M6 9v11h12V9 M10 20v-5.5h4V20',
+  projects: 'M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z',
   download: 'M12 4v11 M7 10l5 5 5-5 M5 20h14',
   external: 'M14 4h6v6 M20 4l-9 9 M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
   mail: 'M4 6h16v12H4z M4 7l8 6 8-6',
   copy: 'M9 9h11v11H9z M5 15H4V4h11v1',
   check: 'M5 12.5l4.5 4.5L19 7.5',
-  menu: 'M4 7h16 M4 12h16 M4 17h16',
   close: 'M6 6l12 12 M18 6L6 18',
   play: 'M8 5.5v13l10.5-6.5z',
   pause: 'M8.5 5v14 M15.5 5v14',
@@ -37,9 +38,6 @@ export const ICONS = {
   file: 'M6 3h8l4 4v14H6z M14 3v4h4',
   person: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4.5 21a7.5 7.5 0 0 1 15 0',
   pin: 'M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z M12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
-  architecture: 'M4 4h6v6H4z M14 4h6v6h-6z M9 16h6v5H9z M7 10v3h10v-3 M12 13v3',
-  sequence: 'M6 3v18 M18 3v18 M6 8h12 M15 5l3 3-3 3 M18 16H6 M9 13l-3 3 3 3',
-  alert: 'M12 4l9 16H3z M12 10v4 M12 17h.01',
   restart: 'M4 12a8 8 0 1 0 2.4-5.7 M4 4v4h4',
 } as const;
 

@@ -78,6 +78,7 @@
 .nav a {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   min-height: 38px;
   padding: 0 12px;
   border-radius: 9px;
@@ -89,68 +90,87 @@
     color 0.15s,
     background-color 0.15s;
 
+  app-icon {
+    color: var(--text-3);
+    transition: color 0.15s;
+  }
+
   &:hover {
     color: var(--text);
     background: var(--surface-2);
+
+    app-icon {
+      color: var(--text-2);
+    }
   }
 
   &.is-active {
     color: var(--text);
     background: var(--surface-3);
+
+    app-icon {
+      color: var(--req);
+    }
   }
 }
 
-.menu-btn {
-  display: none;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid var(--line-2);
-  border-radius: 11px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 1.15rem;
-  cursor: pointer;
-}
-
-@media (max-width: 859px) {
-  .menu-btn {
-    display: inline-grid;
-  }
-
-  .cv-btn span {
+// Entre tablet y escritorio pequeño no cabe el nombre al lado de la barra.
+@media (min-width: 760px) and (max-width: 1023px) {
+  .brand-name {
     display: none;
   }
+}
 
+// Móvil: la barra se queda arriba, con cada icono encima de su nombre.
+@media (max-width: 759px) {
+  .top-inner {
+    gap: 8px;
+  }
+
+  .brand {
+    margin-right: 0;
+  }
+
+  .brand-name,
   .cv-btn {
-    width: 42px;
-    min-height: 42px;
-    padding: 0;
+    display: none;
   }
 
   .nav {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    display: none;
-    padding: 8px var(--gutter) 16px;
-    border-bottom: 1px solid var(--line);
-    background: var(--bg);
-  }
-
-  .top.is-open .nav {
-    display: block;
+    flex: 1;
+    min-width: 0;
   }
 
   .nav ul {
-    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav li {
+    flex: 1;
+    min-width: 0;
   }
 
   .nav a {
     display: flex;
-    min-height: 48px;
-    font-size: 1.05rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-height: 50px;
+    padding: 0 2px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    line-height: 1;
+
+    app-icon {
+      font-size: 1.15rem;
+    }
+
+    span {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 }
 

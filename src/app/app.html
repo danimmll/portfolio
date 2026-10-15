@@ -1,13 +1,13 @@
 <a class="skip" href="#contenido">Saltar al contenido</a>
 
-<header class="top" [class.is-open]="menuOpen()">
+<header class="top">
   <div class="wrap top-inner">
     <a class="brand" routerLink="/" aria-label="Daniel Martín López, inicio">
       <span class="mono" aria-hidden="true">DM</span>
       <span class="brand-name">Daniel Martín</span>
     </a>
 
-    <nav class="nav" id="menu" aria-label="Principal">
+    <nav class="nav" aria-label="Principal">
       <ul>
         @for (item of nav; track item.path) {
           <li>
@@ -17,7 +17,8 @@
               [routerLinkActiveOptions]="{ exact: item.exact }"
               ariaCurrentWhenActive="page"
             >
-              {{ item.label }}
+              <app-icon [name]="item.icon" />
+              <span>{{ item.label }}</span>
             </a>
           </li>
         }
@@ -28,17 +29,6 @@
       <app-icon name="download" />
       <span>Descargar CV</span>
     </a>
-
-    <button
-      type="button"
-      class="menu-btn"
-      (click)="toggleMenu()"
-      [attr.aria-expanded]="menuOpen()"
-      aria-controls="menu"
-    >
-      <app-icon [name]="menuOpen() ? 'close' : 'menu'" />
-      <span class="visually-hidden">Menú</span>
-    </button>
   </div>
 </header>
 
