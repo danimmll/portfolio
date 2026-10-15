@@ -108,7 +108,7 @@ export const PROJECTS: Project[] = [
       },
       {
         title: 'Calorías en el móvil',
-        text: 'El cálculo por MET se hace en la app, con el tipo de ejercicio, el peso del usuario y la duración, y la API solo guarda el resultado.',
+        text: 'El MET de cada ejercicio se calcula en la app con su tipo, el peso del usuario y la duración, dentro de los rangos del Compendium of Physical Activities. La API solo guarda el resultado.',
       },
     ],
     facts: [

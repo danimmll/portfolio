@@ -185,23 +185,24 @@ export interface MetFuerza {
   factores: Factor[];
 }
 
+/** Rango del Compendium of Physical Activities para pesas: 3,5 (ligero) a 6 (vigoroso). */
+export const MET_FUERZA_LIGERO = 3.5;
+export const MET_FUERZA_VIGOROSO = 6;
+
 /** Descanso fijo de 90 s, como lo llama WorkoutSessionFragment. */
-export function metFuerza(
-  levantadoKg: number,
-  pesoKg: number,
-  series: number,
-  reps: number,
-  descanso = 90,
-): MetFuerza {
-  const intensidad = clamp(levantadoKg / pesoKg, 0.3, 1.5);
-  const volumen = clamp((series * reps) / 30, 0.5, 2);
-  const descansoF = clamp(60 / (descanso > 0 ? descanso : 1), 0.7, 1.1);
+export function metFuerza(levantadoKg: number, pesoKg: number, descanso = 90): MetFuerza {
+  const peso = pesoKg > 0 ? pesoKg : 70;
+  const carga = levantadoKg / peso;
+  const intensidad = clamp((carga - 0.25) / 0.75, 0, 1);
+  const densidad = clamp((120 - descanso) / 90, 0, 1);
+  const esfuerzo = 0.75 * intensidad + 0.25 * densidad;
   return {
-    met: 6 * (1 + intensidad) * (1 + volumen) * descansoF,
+    met: MET_FUERZA_LIGERO + (MET_FUERZA_VIGOROSO - MET_FUERZA_LIGERO) * esfuerzo,
     factores: [
-      { label: 'Intensidad (levantado ÷ peso, entre 0,3 y 1,5)', value: intensidad },
-      { label: 'Volumen (series × repeticiones ÷ 30, entre 0,5 y 2)', value: volumen },
-      { label: 'Descanso (60 ÷ 90 s, entre 0,7 y 1,1)', value: descansoF },
+      { label: 'Carga relativa (levantado ÷ peso corporal)', value: carga },
+      { label: 'Intensidad (0 hasta ¼ del peso, 1 desde el peso entero)', value: intensidad },
+      { label: 'Densidad por descanso (0 con 2 min, 1 con 30 s)', value: densidad },
+      { label: 'Esfuerzo (75 % intensidad, 25 % densidad)', value: esfuerzo },
     ],
   };
 }

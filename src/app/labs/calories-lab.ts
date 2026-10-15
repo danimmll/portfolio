@@ -3,9 +3,9 @@ import { Icon } from '../shared/icon';
 import { calorias, metCardio, metEstiramiento, metFuerza } from './engines';
 
 const CALC_URL =
-  'https://github.com/danimmll/FitJourneyProject/blob/main/FitJourney/app/src/main/java/es/iesagora/fitjourney/utils/FitnessCalculator.java#L157-L216';
+  'https://github.com/danimmll/FitJourneyProject/blob/main/FitJourney/app/src/main/java/es/iesagora/fitjourney/utils/FitnessCalculator.java#L157-L230';
 const SESSION_URL =
-  'https://github.com/danimmll/FitJourneyProject/blob/main/FitJourney/app/src/main/java/es/iesagora/fitjourney/ui/workout/session/WorkoutSessionFragment.java#L503-L553';
+  'https://github.com/danimmll/FitJourneyProject/blob/main/FitJourney/app/src/main/java/es/iesagora/fitjourney/ui/workout/session/WorkoutSessionFragment.java#L503-L549';
 
 type Tipo = 'fuerza' | 'cardio' | 'estiramiento';
 
@@ -19,7 +19,8 @@ type Tipo = 'fuerza' | 'cardio' | 'estiramiento';
         <h3>Calculadora de calorías</h3>
         <p>
           Al terminar cada entrenamiento, la app estima las calorías de cada ejercicio con su MET
-          (equivalente metabólico). Esta es la misma fórmula, con los mismos límites.
+          (equivalente metabólico). En fuerza se mueve entre 3,5 y 6, el rango del Compendium of
+          Physical Activities para las pesas. Esta es la misma fórmula que usa la app.
         </p>
       </header>
 
@@ -93,31 +94,10 @@ type Tipo = 'fuerza' | 'cardio' | 'estiramiento';
                     (input)="levantado.set(+$any($event.target).value)"
                   />
                 </label>
-                <label class="field">
-                  <span class="field-label">Series</span>
-                  <output>{{ series() }}</output>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    step="1"
-                    [value]="series()"
-                    (input)="series.set(+$any($event.target).value)"
-                  />
-                </label>
-                <label class="field">
-                  <span class="field-label">Repeticiones por serie</span>
-                  <output>{{ reps() }}</output>
-                  <input
-                    type="range"
-                    min="1"
-                    max="30"
-                    step="1"
-                    [value]="reps()"
-                    (input)="reps.set(+$any($event.target).value)"
-                  />
-                </label>
-                <p class="note">El descanso entre series va fijo a 90 segundos, como en la app.</p>
+                <p class="note">
+                  El descanso entre series va fijo a 90 segundos, como en la app. Las series y las
+                  repeticiones no cambian el MET: se notan en el tiempo que dedicas al ejercicio.
+                </p>
               </fieldset>
             }
             @case ('cardio') {
@@ -256,8 +236,6 @@ export class CaloriesLab {
   readonly peso = signal(72);
   readonly minutos = signal(15);
   readonly levantado = signal(40);
-  readonly series = signal(4);
-  readonly reps = signal(10);
   readonly velocidad = signal(9);
 
   readonly result = computed(() => {
@@ -266,9 +244,9 @@ export class CaloriesLab {
     let m;
     let formulaMet: string;
     if (tipo === 'fuerza') {
-      m = metFuerza(this.levantado(), peso, this.series(), this.reps());
-      const [i, v, d] = m.factores.map((f) => this.num(f.value, 2));
-      formulaMet = `6 × (1 + ${i}) × (1 + ${v}) × ${d}`;
+      m = metFuerza(this.levantado(), peso);
+      const esfuerzo = this.num(m.factores[3].value, 2);
+      formulaMet = `3,5 + 2,5 × ${esfuerzo}`;
     } else if (tipo === 'cardio') {
       m = metCardio(this.velocidad());
       const [v, inc] = m.factores.map((f) => this.num(f.value, 2));
