@@ -1,379 +1,72 @@
 @let dg = diagram();
-@let current = step();
 
-<div class="bar">
-  <div class="flows" role="group" aria-label="Flujos">
-    @for (f of flows(); track f.s.id) {
-      <button
-        type="button"
-        class="scn"
-        [attr.aria-pressed]="f.i === scenarioIndex()"
-        (click)="selectScenario(f.i)"
-      >
-        <span class="scn-dot" aria-hidden="true"></span>
-        {{ f.s.name }}
-      </button>
-    }
-  </div>
-
-  <div class="views" role="group" aria-label="Tipo de diagrama">
+<div class="flows" role="group" aria-label="Qué quieres ver">
+  @for (s of dg.scenarios; track s.id; let i = $index) {
     <button
       type="button"
-      class="view-btn"
-      [attr.aria-pressed]="view() === 'arch'"
-      (click)="setView('arch')"
+      class="flow"
+      [attr.aria-pressed]="i === scenarioIndex()"
+      (click)="selectScenario(i)"
     >
-      <app-icon name="architecture" />
-      Arquitectura
+      {{ s.name }}
     </button>
-    <button
-      type="button"
-      class="view-btn"
-      [attr.aria-pressed]="view() === 'seq'"
-      (click)="setView('seq')"
-    >
-      <app-icon name="sequence" />
-      Secuencia
-    </button>
-  </div>
+  }
 </div>
 
-@if (faults().length) {
-  <div class="breaker" [class.is-on]="isFault()">
-    <div class="breaker-head">
-      <app-icon name="alert" />
-      <p class="breaker-title">Rompe el sistema</p>
-      <p class="breaker-hint">Activa un fallo y mira cómo reacciona, paso a paso.</p>
-    </div>
-    <ul class="switches">
-      @for (f of faults(); track f.s.id) {
-        <li>
-          <button
-            type="button"
-            role="switch"
-            class="switch"
-            [attr.aria-checked]="f.i === scenarioIndex()"
-            (click)="toggleFault(f.i)"
-          >
-            <span class="knob" aria-hidden="true"></span>
-            {{ f.s.fault }}
-          </button>
-        </li>
-      }
-    </ul>
-  </div>
-}
-
-<div class="panel" [attr.aria-label]="scenario().name">
-  @if (isFault()) {
-    <p class="fault-name"><app-icon name="alert" />{{ scenario().name }}</p>
+<figure class="board">
+  @for (l of layouts; track l) {
+    <ng-container *ngTemplateOutlet="plano; context: { $implicit: l }" />
   }
-  <p class="summary">{{ scenario().summary }}</p>
+  <figcaption class="visually-hidden">{{ dg.title }}. {{ step().text }}</figcaption>
+</figure>
 
-  <div class="board" [class.has-inspector]="!!selected()" [class.is-fault]="isFault()">
-    @if (view() === 'arch') {
-      <figure class="arch">
-        @for (l of layouts; track l) {
-          <ng-container *ngTemplateOutlet="plano; context: { $implicit: l }" />
-        }
-        <figcaption class="visually-hidden">
-          {{ dg.title }}. Paso {{ stepIndex() + 1 }}: {{ current.title }}.
-          @for (m of current.msgs; track $index) {
-            {{ nodeName(m.from) }} a {{ nodeName(m.to) }}: {{ m.label }}.
-          }
-        </figcaption>
-      </figure>
-    } @else {
-      @let sq = seq();
-      <div
-        class="seq-scroll"
-        #seqScroll
-        tabindex="0"
-        aria-label="Diagrama de secuencia, se desplaza en horizontal"
-      >
-        <svg
-          class="seq"
-          [attr.viewBox]="'0 0 ' + sq.width + ' ' + sq.height"
-          [style.min-width.px]="sq.width * 0.8"
-          [style.max-width.px]="sq.width * 1.1"
-          role="img"
-          [attr.aria-label]="'Secuencia de ' + scenario().name"
-        >
-          <defs>
-            @for (k of ['idle', 'req', 'res', 'err', 'self']; track k) {
-              <marker
-                [attr.id]="uid() + '-sq-' + k"
-                viewBox="0 0 10 10"
-                refX="9"
-                refY="5"
-                markerWidth="7"
-                markerHeight="7"
-                orient="auto-start-reverse"
-              >
-                <path d="M0 1 L9 5 L0 9 z" [attr.class]="'mk mk-' + k" />
-              </marker>
-            }
-          </defs>
-
-          @for (h of sq.heads; track h.id) {
-            @let on = stepNodesSeq().has(h.id);
-            <g class="lane" [class.is-on]="on" (click)="toggleNode(h.id)">
-              <line
-                class="lifeline"
-                [attr.x1]="h.x"
-                [attr.x2]="h.x"
-                [attr.y1]="sq.headY + sq.headH"
-                [attr.y2]="sq.height - 6"
-              />
-              <rect
-                class="lane-head"
-                [attr.x]="h.x - sq.colW / 2 + 8"
-                [attr.y]="sq.headY"
-                [attr.width]="sq.colW - 16"
-                [attr.height]="sq.headH"
-                rx="9"
-              />
-              <g
-                class="lane-icon"
-                [attr.transform]="
-                  'translate(' + (h.x - 8) + ' ' + (sq.headY + 7) + ') scale(0.6667)'
-                "
-              >
-                <path [attr.d]="iconOf(h.node.kind)" />
-              </g>
-              <text class="lane-label" [attr.x]="h.x" [attr.y]="sq.headY + 38">
-                {{ h.node.label }}
-              </text>
-            </g>
-          }
-
-          @for (mk of sq.marks; track mk.step) {
-            <g
-              class="mark"
-              [class.is-current]="mk.step === stepIndex()"
-              [class.is-past]="mk.step < stepIndex()"
-              (click)="goTo(mk.step)"
-            >
-              <rect
-                class="mark-band"
-                x="4"
-                [attr.y]="mk.y - 22"
-                [attr.width]="sq.width - 8"
-                [attr.height]="mk.y2 - mk.y + 36"
-                rx="10"
-              />
-              <circle class="mark-dot" cx="26" [attr.cy]="mk.y - 2" r="12" />
-              <text class="mark-n" x="26" [attr.y]="mk.y + 2">{{ mk.step + 1 }}</text>
-            </g>
-          }
-
-          @for (r of sq.rows; track r.key) {
-            @let state =
-              r.step === stepIndex() ? 'current' : r.step < stepIndex() ? 'past' : 'future';
-            <g
-              class="row"
-              [class]="'row k-' + r.kind + ' is-' + state"
-              [style.--d]="r.order * 0.32 + 's'"
-              (click)="goTo(r.step)"
-            >
-              <path
-                class="row-line"
-                [attr.d]="r.d"
-                [attr.marker-end]="
-                  'url(#' + uid() + '-sq-' + (state === 'future' ? 'idle' : r.kind) + ')'
-                "
-              />
-              <text class="row-label" [attr.x]="r.lx" [attr.y]="r.ly" [attr.text-anchor]="r.anchor">
-                {{ r.text }}
-              </text>
-            </g>
-          }
-        </svg>
-      </div>
-    }
-
-    @if (selected(); as n) {
-      <aside class="inspector" aria-label="Pieza seleccionada">
-        <div class="insp-head">
-          <span class="insp-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="iconOf(n.kind)" /></svg>
-          </span>
-          <div class="insp-title">
-            <p class="insp-name">{{ n.label }}</p>
-            @if (n.sub) {
-              <p class="insp-sub">{{ n.sub }}</p>
-            }
-          </div>
-          <button type="button" class="icon-btn" (click)="selectedId.set(null)" aria-label="Cerrar">
-            <app-icon name="close" />
-          </button>
-        </div>
-        <p class="insp-what">{{ n.info.what }}</p>
-        @if (n.info.points?.length) {
-          <ul class="insp-points">
-            @for (p of n.info.points; track p) {
-              <li>{{ p }}</li>
-            }
-          </ul>
-        }
-        <ul class="chips" aria-label="Tecnologías">
-          @for (t of n.info.tech; track t) {
-            <li class="chip">{{ t }}</li>
-          }
-        </ul>
-        @if (n.info.path) {
-          <a class="insp-link" [href]="repoLink(n.info.path)" target="_blank" rel="noopener">
-            <app-icon name="code" />
-            Ver en GitHub
-          </a>
-        }
-      </aside>
-    }
-  </div>
-
-  <div class="legend" aria-hidden="true">
-    <span class="lg lg-req">Petición</span>
-    <span class="lg lg-res">Respuesta</span>
-    <span class="lg lg-err">Error</span>
-    <span class="lg-hint">
-      @if (view() === 'arch') {
-        Pulsa una pieza para ver qué hace.
-      } @else {
-        Pulsa una fila para ir a ese paso.
-      }
-    </span>
-  </div>
-
-  <div class="transport">
-    <div class="transport-buttons">
+<ol class="progress" aria-label="Pasos">
+  @for (s of steps(); track $index; let i = $index) {
+    <li>
       <button
         type="button"
-        class="icon-btn"
-        (click)="previous()"
-        [disabled]="isFirst()"
-        aria-label="Paso anterior"
+        class="seg"
+        [class.is-done]="i < stepIndex()"
+        [attr.aria-current]="i === stepIndex() ? 'step' : null"
+        [attr.title]="s.text"
+        (click)="goTo(i)"
       >
-        <app-icon name="prev" />
+        <span class="visually-hidden">Paso {{ i + 1 }}: {{ s.text }}</span>
       </button>
-      <button type="button" class="play" (click)="togglePlay()" [attr.aria-pressed]="playing()">
-        <app-icon [name]="playing() ? 'pause' : isLast() ? 'restart' : 'play'" />
-        {{ playing() ? 'Pausar' : isLast() ? 'Otra vez' : 'Reproducir' }}
-      </button>
-      <button
-        type="button"
-        class="icon-btn"
-        (click)="next()"
-        [disabled]="isLast()"
-        aria-label="Paso siguiente"
-      >
-        <app-icon name="next" />
-      </button>
-    </div>
-    <ol class="progress" aria-label="Pasos">
-      @for (s of steps(); track $index; let i = $index) {
-        <li>
-          <button
-            type="button"
-            class="seg"
-            [class.is-done]="i < stepIndex()"
-            [attr.aria-current]="i === stepIndex() ? 'step' : null"
-            [attr.title]="i + 1 + '. ' + s.title"
-            (click)="goTo(i)"
-          >
-            <span class="visually-hidden">Paso {{ i + 1 }}: {{ s.title }}</span>
-          </button>
-        </li>
-      }
-    </ol>
+    </li>
+  }
+</ol>
+
+<div class="caption">
+  <div class="controls">
+    <button
+      type="button"
+      class="icon-btn"
+      (click)="previous()"
+      [disabled]="isFirst()"
+      aria-label="Paso anterior"
+    >
+      <app-icon name="prev" />
+    </button>
+    <button type="button" class="play" (click)="togglePlay()" [attr.aria-pressed]="playing()">
+      <app-icon [name]="playing() ? 'pause' : isLast() ? 'restart' : 'play'" />
+      {{ playing() ? 'Pausar' : isLast() ? 'Otra vez' : 'Reproducir' }}
+    </button>
+    <button
+      type="button"
+      class="icon-btn"
+      (click)="next()"
+      [disabled]="isLast()"
+      aria-label="Paso siguiente"
+    >
+      <app-icon name="next" />
+    </button>
+  </div>
+
+  <div class="say" aria-live="polite">
     <p class="count">Paso {{ stepIndex() + 1 }} de {{ steps().length }}</p>
+    <p class="text">{{ step().text }}</p>
   </div>
-
-  <div class="detail">
-    <div class="explain" aria-live="polite">
-      <h3 class="explain-title">{{ current.title }}</h3>
-      <p class="explain-text">{{ current.text }}</p>
-      @if (current.why) {
-        <div class="why">
-          <p class="why-label">Por qué así</p>
-          <p>{{ current.why }}</p>
-        </div>
-      }
-    </div>
-
-    <div class="travel">
-      <p class="travel-title">Qué viaja en este paso</p>
-      <ol class="msgs">
-        @for (m of current.msgs; track $index) {
-          @let k = msgKindOf(m);
-          <li class="msg" [class]="'msg k-' + k">
-            <span class="msg-kind">{{ kindLabel(k) }}</span>
-            <span class="msg-route">
-              @if (k === 'self') {
-                {{ nodeName(m.from) }}
-              } @else {
-                {{ nodeName(m.from) }} <span aria-hidden="true">→</span
-                ><span class="visually-hidden">a</span> {{ nodeName(m.to) }}
-              }
-            </span>
-            <code class="msg-label">{{ m.label }}</code>
-          </li>
-        }
-      </ol>
-      @if (tabs().length) {
-        <button
-          type="button"
-          class="code-toggle"
-          [attr.aria-expanded]="showCode()"
-          [attr.aria-controls]="uid() + '-source'"
-          (click)="toggleCode()"
-        >
-          <app-icon name="code" />
-          {{ showCode() ? 'Ocultar el código' : 'Ver el código de este paso' }}
-        </button>
-      }
-    </div>
-  </div>
-
-  @if (showCode() && tabs().length) {
-    <div class="source" [id]="uid() + '-source'">
-      <div class="source-tabs" role="tablist" aria-label="Código del paso">
-        @for (t of tabs(); track t) {
-          <button
-            type="button"
-            role="tab"
-            class="source-tab"
-            [attr.aria-selected]="t === tab()"
-            (click)="setTab(t)"
-          >
-            {{ tabLabel(t) }}
-          </button>
-        }
-      </div>
-
-      @if (tab() === 'code') {
-        @let c = current.code!;
-        <div class="code-head">
-          <span class="code-path" [attr.title]="c.path">{{ c.path }}</span>
-          <a class="code-link" [href]="c.url" target="_blank" rel="noopener">
-            Ver en GitHub
-            <app-icon name="external" />
-          </a>
-        </div>
-        <pre
-          class="code"
-          tabindex="0"
-        ><code>@for (line of codeLines(); track $index; let i = $index) {<span class="ln">{{ c.start + i }}</span>@for (tok of line; track $index) {<span [class]="tok.k ? 't-' + tok.k : null">{{ tok.t }}</span>}{{ '\n' }}}</code></pre>
-      } @else {
-        <div class="code-head">
-          <span class="code-path">Forma real, datos de ejemplo</span>
-        </div>
-        <pre
-          class="code code--http"
-          tabindex="0"
-        ><code>@for (line of httpLines(); track $index) {@for (tok of line; track $index) {<span [class]="tok.k ? 't-' + tok.k : null">{{ tok.t }}</span>}{{ '\n' }}}</code></pre>
-      }
-    </div>
-  }
 </div>
 
 <ng-template #plano let-l>
@@ -382,14 +75,14 @@
   @let geo = geometry()[lay];
   @let ov = overlay()[lay];
   @let lit = litEdges();
-  @let parts = scenarioParts();
+  @let used = parts();
   <svg
     class="plano"
     [class.plano--d]="lay === 'd'"
     [class.plano--m]="lay === 'm'"
     [attr.viewBox]="'0 0 ' + size[0] + ' ' + size[1]"
-    role="group"
-    [attr.aria-label]="diagram().title"
+    aria-hidden="true"
+    focusable="false"
   >
     <defs>
       @for (k of ['idle', 'req', 'res', 'err']; track k) {
@@ -423,8 +116,7 @@
     @for (e of diagram().edges; track e.id) {
       @let k = lit.get(e.id);
       <path
-        class="edge"
-        [class]="'edge' + (k ? ' is-on k-' + k : '') + (parts.edges.has(e.id) ? '' : ' is-out')"
+        [attr.class]="'edge' + (k ? ' is-on k-' + k : '') + (used.edges.has(e.id) ? '' : ' is-out')"
         [attr.d]="geo.get(e.id)!.d"
         [attr.marker-end]="'url(#' + uid() + lay + '-' + (k ?? 'idle') + ')'"
       />
@@ -433,7 +125,6 @@
     @for (p of ov.pulses; track p.key) {
       <rect
         class="pulse"
-        [class]="'pulse k-' + p.kind"
         [attr.x]="p.x - 10 * p.p"
         [attr.y]="p.y - 10 * p.p"
         [attr.width]="p.w + 20 * p.p"
@@ -448,15 +139,7 @@
       <g
         class="node"
         [class.is-on]="activeNodes().has(n.id)"
-        [class.is-out]="!parts.nodes.has(n.id)"
-        [class.is-sel]="selectedId() === n.id"
-        role="button"
-        tabindex="0"
-        [attr.aria-label]="nodeAria(n)"
-        [attr.aria-pressed]="selectedId() === n.id"
-        (click)="toggleNode(n.id)"
-        (keydown.enter)="toggleNode(n.id)"
-        (keydown.space)="$event.preventDefault(); toggleNode(n.id)"
+        [class.is-out]="!used.nodes.has(n.id)"
       >
         <rect
           class="node-box"
@@ -494,8 +177,7 @@
 
     @for (k of ov.packets; track k.key) {
       <circle
-        class="packet"
-        [class]="'packet k-' + k.kind"
+        [attr.class]="'packet k-' + k.kind"
         [attr.cx]="k.x"
         [attr.cy]="k.y"
         [attr.r]="lay === 'd' ? 6 : 5"
@@ -503,15 +185,17 @@
     }
 
     @for (p of ov.pills; track p.key) {
-      <g class="pill" [class]="'pill k-' + p.kind + (p.moving ? ' is-moving' : '')">
+      <g [attr.class]="'pill k-' + p.kind">
         <rect
-          [attr.x]="p.x - p.w / 2"
-          [attr.y]="p.y - p.h / 2"
+          [attr.x]="p.x"
+          [attr.y]="p.y"
           [attr.width]="p.w"
           [attr.height]="p.h"
           [attr.rx]="p.h / 2"
         />
-        <text [attr.x]="p.x" [attr.y]="p.y + (lay === 'd' ? 3.6 : 3.2)">{{ p.text }}</text>
+        <text [attr.x]="p.x + p.w / 2" [attr.y]="p.y + p.h / 2 + (lay === 'd' ? 3.6 : 3.2)">
+          {{ p.text }}
+        </text>
       </g>
     }
   </svg>

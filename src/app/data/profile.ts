@@ -109,8 +109,8 @@ export const STACK: { group: string; items: Tech[] }[] = [
           {
             text: 'El frontend de ScoreVia en Angular',
             link: SV,
-            scenario: 'sesion-caducada',
-            step: 3,
+            scenario: 'prediccion-directo',
+            step: 1,
           },
           {
             text: 'Esta web, con diagramas generados desde datos',
@@ -158,12 +158,7 @@ export const STACK: { group: string; items: Tech[] }[] = [
             scenario: 'login-google',
             step: 3,
           },
-          {
-            text: 'Circuit breaker por ruta con respuesta 503',
-            link: SV,
-            scenario: 'servicio-caido',
-            step: 4,
-          },
+          { text: 'Circuit breaker por ruta con respuesta 503', link: SV },
         ],
       },
       {
@@ -206,8 +201,8 @@ export const STACK: { group: string; items: Tech[] }[] = [
           {
             text: 'Refresh token rotado con detección de reuso',
             link: SV,
-            scenario: 'sesion-caducada',
-            step: 5,
+            scenario: 'login-google',
+            step: 6,
           },
           {
             text: 'Login con Google verificando el ID token',
@@ -226,12 +221,7 @@ export const STACK: { group: string; items: Tech[] }[] = [
             scenario: 'ingesta',
             step: 2,
           },
-          {
-            text: 'El circuito del Gateway se abre si un servicio cae',
-            link: SV,
-            scenario: 'servicio-caido',
-            step: 3,
-          },
+          { text: 'El circuito del Gateway se abre si un servicio cae', link: SV },
         ],
       },
       {
@@ -279,12 +269,7 @@ export const STACK: { group: string; items: Tech[] }[] = [
       {
         name: 'Angular',
         uses: [
-          {
-            text: 'Interceptor que renueva la sesión sin que se note',
-            link: SV,
-            scenario: 'sesion-caducada',
-            step: 3,
-          },
+          { text: 'Interceptor que renueva la sesión sin que se note', link: SV },
           {
             text: 'Esta web, prerenderizada y sin servidor',
             link: 'https://github.com/danimmll/portfolio',

@@ -32,15 +32,6 @@ export type NodeKind =
   | 'route'
   | 'orm';
 
-/** Lo que cuenta el inspector cuando pulsas una pieza. */
-export interface NodeInfo {
-  what: string;
-  tech: string[];
-  points?: string[];
-  /** Carpeta o fichero en el repositorio. */
-  path?: string;
-}
-
 export interface DiagramNode extends Placed {
   id: string;
   label: string;
@@ -48,7 +39,6 @@ export interface DiagramNode extends Placed {
   /** Versión corta del subtítulo para el plano de móvil. */
   subM?: string;
   kind: NodeKind;
-  info: NodeInfo;
 }
 
 export interface DiagramGroup extends Placed {
@@ -65,7 +55,7 @@ export interface DiagramEdge {
 }
 
 /**
- * req: petición. res: respuesta correcta. err: respuesta de error.
+ * req: petición. res: respuesta. err: error.
  * self: trabajo dentro de la propia pieza (from === to).
  */
 export type MsgKind = 'req' | 'res' | 'err' | 'self';
@@ -77,37 +67,15 @@ export interface Msg {
   kind?: MsgKind;
 }
 
-export type CodeLang = 'java' | 'ts' | 'js' | 'yaml' | 'sql' | 'http' | 'json';
-
-export interface CodeRef {
-  file: string;
-  path: string;
-  lang: CodeLang;
-  /** Primera línea del fragmento en el fichero original. */
-  start: number;
-  code: string;
-  url: string;
-}
-
 export interface Step {
-  title: string;
+  /** Una frase que cuenta lo que pasa en el paso. */
   text: string;
-  why?: string;
   msgs: Msg[];
-  code?: CodeRef;
-  /** Petición o respuesta HTTP de ejemplo, tal y como viajaría. */
-  http?: string;
 }
 
 export interface Scenario {
   id: string;
   name: string;
-  summary: string;
-  /**
-   * Si existe, es un fallo provocado: no sale como pestaña sino como interruptor en
-   * «Rompe el sistema», con este texto.
-   */
-  fault?: string;
   steps: Step[];
 }
 

@@ -7,11 +7,10 @@ import { DiagramComponent } from '../../diagram/diagram';
 import { Icon } from '../../shared/icon';
 import { CaloriesLab } from '../../labs/calories-lab';
 import { PredictionLab } from '../../labs/prediction-lab';
-import { RatelimitLab } from '../../labs/ratelimit-lab';
 
 @Component({
   selector: 'app-project',
-  imports: [RouterLink, DiagramComponent, Icon, PredictionLab, RatelimitLab, CaloriesLab],
+  imports: [RouterLink, DiagramComponent, Icon, PredictionLab, CaloriesLab],
   templateUrl: './project.html',
   styleUrl: './project.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,7 +20,6 @@ export class ProjectPage {
   readonly slug = input.required<string>();
   readonly escenario = input<string>();
   readonly paso = input<string>();
-  readonly vista = input<string>();
 
   private readonly router = inject(Router);
   private readonly title = inject(Title);

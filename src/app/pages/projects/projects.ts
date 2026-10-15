@@ -9,11 +9,7 @@ import { ProjectCard } from '../../shared/project-card';
     <div class="page wrap">
       <header class="page-head">
         <h1>Proyectos</h1>
-        <p>
-          Cada proyecto tiene un diagrama interactivo de cómo funciona por dentro. Elige un flujo y
-          avanza paso a paso: verás qué pieza trabaja, qué viaja entre ellas, el código real de ese
-          momento y por qué está hecho así.
-        </p>
+        <p>Entra en cualquiera para ver cómo funciona por dentro y probar parte de su lógica.</p>
       </header>
       <div class="list">
         @for (p of projects; track p.slug) {

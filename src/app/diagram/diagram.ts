@@ -5,28 +5,22 @@ import {
   ElementRef,
   PLATFORM_ID,
   afterNextRender,
-  afterRenderEffect,
   computed,
   effect,
   inject,
   input,
   signal,
   untracked,
-  viewChild,
 } from '@angular/core';
-import { Location, NgTemplateOutlet, isPlatformBrowser } from '@angular/common';
+import { NgTemplateOutlet, isPlatformBrowser } from '@angular/common';
 import { Icon } from '../shared/icon';
 import { ICONS } from '../shared/icons';
-import { Diagram, DiagramNode, Layout, Msg, MsgKind, NodeKind, msgKind } from './diagram.model';
+import { Diagram, Layout, Msg, MsgKind, msgKind } from './diagram.model';
 import { EdgeGeometry, ease, pointAt, route } from './geometry';
-import { Tok, highlight } from './highlight';
 
 /** Lo que tarda un mensaje en recorrer una conexión, y un trabajo interno en una pieza. */
 const EDGE_MS = 950;
 const SELF_MS = 850;
-
-export type View = 'arch' | 'seq';
-type Tab = 'code' | 'http';
 
 interface Timed {
   msg: Msg;
@@ -37,40 +31,6 @@ interface Timed {
   dur: number;
 }
 
-interface Pill {
-  key: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  text: string;
-  kind: MsgKind;
-  moving: boolean;
-}
-
-interface Packet {
-  key: string;
-  x: number;
-  y: number;
-  kind: MsgKind;
-}
-
-interface Pulse {
-  key: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  p: number;
-  kind: MsgKind;
-}
-
-interface Overlay {
-  pills: Pill[];
-  packets: Packet[];
-  pulses: Pulse[];
-}
-
 interface Rect {
   x: number;
   y: number;
@@ -78,14 +38,23 @@ interface Rect {
   h: number;
 }
 
+interface Pill extends Rect {
+  key: string;
+  text: string;
+  kind: MsgKind;
+}
+
+interface Overlay {
+  pills: Pill[];
+  packets: { key: string; x: number; y: number; kind: MsgKind }[];
+  pulses: (Rect & { key: string; p: number })[];
+}
+
 const overlap = (a: Rect, b: Rect) =>
   Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
   Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 
-const PILL = {
-  d: { cw: 6.3, h: 20, font: 10.5 },
-  m: { cw: 5.75, h: 17, font: 9.5 },
-};
+const PILL = { d: { cw: 6.3, h: 20 }, m: { cw: 5.75, h: 17 } };
 
 @Component({
   selector: 'app-diagram',
@@ -93,35 +62,28 @@ const PILL = {
   templateUrl: './diagram.html',
   styleUrl: './diagram.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(keydown)': 'onKey($event)' },
 })
 export class DiagramComponent {
   readonly diagram = input.required<Diagram>();
   /** Prefijo para los ids del SVG, único en la página. */
   readonly uid = input.required<string>();
-  /** Estado inicial que llega en la URL: ?escenario=…&paso=…&vista=secuencia */
+  /** Estado inicial que llega en la URL: ?escenario=…&paso=… */
   readonly startScenario = input<string | undefined>();
   readonly startStep = input<string | undefined>();
-  readonly startView = input<string | undefined>();
 
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  private readonly location = inject(Location);
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly layouts: Layout[] = ['d', 'm'];
   readonly scenarioIndex = signal(0);
   readonly stepIndex = signal(0);
-  readonly view = signal<View>('arch');
   readonly playing = signal(false);
-  readonly selectedId = signal<string | null>(null);
-  private readonly tabPref = signal<Tab>('code');
-  /** El código de cada paso va plegado; si lo abres, se queda abierto al cambiar de paso. */
-  readonly showCode = signal(false);
-  private lastFlow = 0;
-  /** Milisegundos desde que empezó el paso. Infinito: recorrido terminado (estado estático). */
+  /** Milisegundos desde que empezó el paso. Infinito: recorrido terminado. */
   private readonly elapsed = signal(Number.POSITIVE_INFINITY);
   private seen = false;
+  private raf = 0;
+  private timer: ReturnType<typeof setTimeout> | undefined;
 
   readonly scenario = computed(() => this.diagram().scenarios[this.scenarioIndex()]);
   readonly steps = computed(() => this.scenario().steps);
@@ -129,13 +91,8 @@ export class DiagramComponent {
   readonly isFirst = computed(() => this.stepIndex() === 0);
   readonly isLast = computed(() => this.stepIndex() === this.steps().length - 1);
 
-  readonly nodeById = computed(() => new Map(this.diagram().nodes.map((n) => [n.id, n])));
-  readonly selected = computed(() => {
-    const id = this.selectedId();
-    return id ? (this.nodeById().get(id) ?? null) : null;
-  });
+  private readonly nodeById = computed(() => new Map(this.diagram().nodes.map((n) => [n.id, n])));
 
-  /** Geometría de cada conexión en los dos planos. */
   readonly geometry = computed(() => {
     const dg = this.diagram();
     const byId = this.nodeById();
@@ -149,7 +106,7 @@ export class DiagramComponent {
   });
 
   /** Mensajes del paso con su conexión y su hueco en el tiempo. */
-  readonly timeline = computed(() => {
+  private readonly timeline = computed(() => {
     const dg = this.diagram();
     let t = 0;
     const items: Timed[] = this.step().msgs.map((msg) => {
@@ -170,8 +127,8 @@ export class DiagramComponent {
     return { items, total: t };
   });
 
-  /** Piezas y conexiones que toca el escenario: el resto se atenúa. */
-  readonly scenarioParts = computed(() => {
+  /** Piezas y conexiones que usa el flujo elegido: el resto se atenúa. */
+  readonly parts = computed(() => {
     const dg = this.diagram();
     const nodes = new Set<string>();
     const edges = new Set<string>();
@@ -188,7 +145,6 @@ export class DiagramComponent {
     return { nodes, edges };
   });
 
-  /** Conexiones encendidas en este instante, con el tipo del último mensaje que pasó. */
   readonly litEdges = computed(() => {
     const t = this.elapsed();
     const lit = new Map<string, MsgKind>();
@@ -214,157 +170,24 @@ export class DiagramComponent {
     return { d: this.buildOverlay('d', t), m: this.buildOverlay('m', t) };
   });
 
-  /** Vista de secuencia: una línea de vida por pieza, en el orden en que aparecen. */
-  readonly seq = computed(() => {
-    const sc = this.scenario();
-    const byId = this.nodeById();
-    const ids: string[] = [];
-    for (const s of sc.steps)
-      for (const m of s.msgs) for (const id of [m.from, m.to]) if (!ids.includes(id)) ids.push(id);
-
-    const colW = Math.round(Math.min(172, Math.max(118, 1040 / ids.length)));
-    const padL = 56;
-    const headY = 14;
-    const headH = 46;
-    const x = (id: string) => padL + ids.indexOf(id) * colW + colW / 2;
-
-    let y = headY + headH + 40;
-    const rows: {
-      key: string;
-      step: number;
-      order: number;
-      d: string;
-      lx: number;
-      ly: number;
-      anchor: 'start' | 'middle';
-      text: string;
-      kind: MsgKind;
-    }[] = [];
-    const marks: { step: number; y: number; y2: number }[] = [];
-
-    sc.steps.forEach((s, si) => {
-      const first = y;
-      s.msgs.forEach((m, mi) => {
-        const kind = msgKind(m);
-        const x1 = x(m.from);
-        const x2 = x(m.to);
-        if (kind === 'self') {
-          rows.push({
-            key: `${si}-${mi}`,
-            step: si,
-            order: mi,
-            d: `M${x1 + 5} ${y - 8} h28 v16 h-24`,
-            lx: x1 + 40,
-            ly: y + 4,
-            anchor: 'start',
-            text: m.label,
-            kind,
-          });
-        } else {
-          const dir = x2 > x1 ? 1 : -1;
-          rows.push({
-            key: `${si}-${mi}`,
-            step: si,
-            order: mi,
-            d: `M${x1 + dir * 5} ${y} H${x2 - dir * 7}`,
-            lx: (x1 + x2) / 2,
-            ly: y - 8,
-            anchor: 'middle',
-            text: m.label,
-            kind,
-          });
-        }
-        y += 38;
-      });
-      marks.push({ step: si, y: first, y2: y - 38 });
-      y += 16;
-    });
-
-    return {
-      heads: ids.map((id) => ({ id, x: x(id), node: byId.get(id)! })),
-      rows,
-      marks,
-      colW,
-      headY,
-      headH,
-      width: padL + ids.length * colW + 8,
-      height: y + 4,
-    };
-  });
-
-  readonly stepNodesSeq = computed(() => {
-    const on = new Set<string>();
-    for (const m of this.step().msgs) {
-      on.add(m.from);
-      on.add(m.to);
-    }
-    return on;
-  });
-
-  readonly tabs = computed(() => {
-    const s = this.step();
-    const tabs: Tab[] = [];
-    if (s.code) tabs.push('code');
-    if (s.http) tabs.push('http');
-    return tabs;
-  });
-
-  readonly tab = computed<Tab | undefined>(() => {
-    const pref = this.tabPref();
-    const tabs = this.tabs();
-    return tabs.includes(pref) ? pref : tabs[0];
-  });
-
-  /** Flujos normales (pestañas) y fallos provocados (interruptores), con su índice real. */
-  readonly flows = computed(() =>
-    this.diagram()
-      .scenarios.map((s, i) => ({ s, i }))
-      .filter((x) => !x.s.fault),
-  );
-
-  readonly faults = computed(() =>
-    this.diagram()
-      .scenarios.map((s, i) => ({ s, i }))
-      .filter((x) => !!x.s.fault),
-  );
-
-  readonly isFault = computed(() => !!this.scenario().fault);
-
-  readonly codeLines = computed(() => {
-    const c = this.step().code;
-    return c ? highlight(c.code, c.lang) : [];
-  });
-
-  readonly httpLines = computed(() => {
-    const h = this.step().http;
-    return h ? highlight(h, 'http') : [];
-  });
-
-  private raf = 0;
-  private timer: ReturnType<typeof setTimeout> | undefined;
-  private readonly seqScroll = viewChild<ElementRef<HTMLElement>>('seqScroll');
-
   constructor() {
     // Estado inicial desde la URL.
     effect(() => {
       const dg = this.diagram();
       const sid = this.startScenario();
-      const pstep = this.startStep();
-      const v = this.startView();
+      const n = Number(this.startStep());
       untracked(() => {
         const si = Math.max(
           0,
           dg.scenarios.findIndex((s) => s.id === sid),
         );
         this.scenarioIndex.set(si);
-        const n = Number(pstep);
         const max = dg.scenarios[si].steps.length;
         this.stepIndex.set(Number.isInteger(n) && n >= 1 && n <= max ? n - 1 : 0);
-        this.view.set(v === 'secuencia' ? 'seq' : 'arch');
       });
     });
 
-    // Cada paso nuevo arranca su recorrido (si el diagrama ya se ha visto).
+    // Cada paso nuevo arranca su recorrido, si el diagrama ya se ha visto.
     effect(() => {
       this.step();
       untracked(() => {
@@ -372,41 +195,16 @@ export class DiagramComponent {
       });
     });
 
-    // Reproducción automática.
+    // Reproducción automática: espera al recorrido y deja tiempo para leer la frase.
     effect(() => {
       const playing = this.playing();
       const { total } = this.timeline();
-      const s = this.step();
       clearTimeout(this.timer);
       if (!playing || !this.isBrowser) return;
-      const reading = Math.max(3800, (s.text.length + (s.why?.length ?? 0)) * 28);
       this.timer = setTimeout(() => {
         if (this.isLast()) this.playing.set(false);
         else this.stepIndex.update((i) => i + 1);
-      }, total + reading);
-    });
-
-    // En la vista de secuencia, desplaza el scroll horizontal hasta las filas del paso actual.
-    afterRenderEffect(() => {
-      this.stepIndex();
-      this.scenarioIndex();
-      const el = this.seqScroll()?.nativeElement;
-      if (!el || el.scrollWidth <= el.clientWidth) return;
-      const rows = el.querySelectorAll<SVGGElement>('.row.is-current .row-line');
-      if (!rows.length) return;
-      let left = Number.POSITIVE_INFINITY;
-      let right = 0;
-      rows.forEach((r) => {
-        const b = r.getBoundingClientRect();
-        left = Math.min(left, b.left);
-        right = Math.max(right, b.right);
-      });
-      const box = el.getBoundingClientRect();
-      if (left >= box.left + 8 && right <= box.right - 8) return;
-      el.scrollTo({
-        left: el.scrollLeft + (left - box.left) - 48,
-        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-      });
+      }, total + 2600);
     });
 
     afterNextRender(() => {
@@ -432,69 +230,24 @@ export class DiagramComponent {
     });
   }
 
-  // ——— Acciones ———
-
   selectScenario(index: number): void {
     if (index === this.scenarioIndex()) return;
-    if (!this.diagram().scenarios[index].fault) this.lastFlow = index;
     this.scenarioIndex.set(index);
     this.stepIndex.set(0);
     this.playing.set(false);
-    this.syncUrl();
-  }
-
-  /** Activa un fallo y lo reproduce; si ya estaba activo, vuelve al último flujo normal. */
-  toggleFault(index: number): void {
-    if (index === this.scenarioIndex()) {
-      this.selectScenario(this.lastFlow);
-      return;
-    }
-    this.selectScenario(index);
-    this.seen = true;
-    this.travel();
-    this.playing.set(true);
-  }
-
-  toggleCode(): void {
-    this.showCode.update((v) => !v);
-  }
-
-  onKey(event: KeyboardEvent): void {
-    const target = event.target as HTMLElement;
-    if (target.closest('[role="tablist"], [role="switch"], input')) return;
-    if (event.key === 'Escape' && this.selectedId()) {
-      this.selectedId.set(null);
-      return;
-    }
-    if (event.key === 'ArrowRight' && !target.closest('pre')) {
-      event.preventDefault();
-      this.next();
-    }
-    if (event.key === 'ArrowLeft' && !target.closest('pre')) {
-      event.preventDefault();
-      this.previous();
-    }
   }
 
   goTo(index: number): void {
-    if (index === this.stepIndex()) {
-      this.travel();
-      return;
-    }
-    this.stepIndex.set(index);
-    this.syncUrl();
+    if (index === this.stepIndex()) this.travel();
+    else this.stepIndex.set(index);
   }
 
   previous(): void {
-    if (this.isFirst()) return;
-    this.stepIndex.update((i) => i - 1);
-    this.syncUrl();
+    if (!this.isFirst()) this.stepIndex.update((i) => i - 1);
   }
 
   next(): void {
-    if (this.isLast()) return;
-    this.stepIndex.update((i) => i + 1);
-    this.syncUrl();
+    if (!this.isLast()) this.stepIndex.update((i) => i + 1);
   }
 
   togglePlay(): void {
@@ -508,61 +261,13 @@ export class DiagramComponent {
     this.playing.set(true);
   }
 
-  setView(v: View): void {
-    if (v === this.view()) return;
-    this.view.set(v);
-    this.selectedId.set(null);
-    this.syncUrl();
-  }
-
-  setTab(t: Tab): void {
-    this.tabPref.set(t);
-  }
-
-  toggleNode(id: string): void {
-    this.selectedId.update((cur) => (cur === id ? null : id));
-  }
-
-  // ——— Ayudas para la plantilla ———
-
   asLayout(l: unknown): Layout {
     return l === 'm' ? 'm' : 'd';
   }
 
-  iconOf(kind: NodeKind | string): string {
+  iconOf(kind: string): string {
     return (ICONS as Record<string, string>)[kind === 'external' ? 'cloud' : kind] ?? ICONS.service;
   }
-
-  repoLink(path: string): string {
-    const kind = /\.[a-z]+$/i.test(path) ? 'blob' : 'tree';
-    return `${this.diagram().repo}/${kind}/main/${path}`;
-  }
-
-  nodeName(id: string): string {
-    return this.nodeById().get(id)?.label ?? id;
-  }
-
-  tabLabel(t: Tab): string {
-    return t === 'code' ? (this.step().code?.file ?? 'Código') : 'HTTP de ejemplo';
-  }
-
-  trackTok(_: number, tok: Tok): string {
-    return tok.t;
-  }
-
-  kindLabel(kind: MsgKind): string {
-    return { req: 'Petición', res: 'Respuesta', err: 'Error', self: 'Trabajo interno' }[kind];
-  }
-
-  msgKindOf(m: Msg): MsgKind {
-    return msgKind(m);
-  }
-
-  nodeAria(n: DiagramNode): string {
-    return `${n.label}. Ver qué hace esta pieza.`;
-  }
-
-  // ——— Animación ———
 
   private travel(): void {
     if (!this.isBrowser) return;
@@ -586,17 +291,24 @@ export class DiagramComponent {
     this.raf = requestAnimationFrame(tick);
   }
 
+  /** Paquetes en marcha y etiquetas aparcadas sin tapar piezas ni otras etiquetas. */
   private buildOverlay(l: Layout, t: number): Overlay {
     const dg = this.diagram();
     const geo = this.geometry()[l];
     const [W, H] = dg.size[l];
     const { cw, h } = PILL[l];
     const byId = this.nodeById();
-    const pills: Pill[] = [];
-    const packets: Packet[] = [];
-    const pulses: Pulse[] = [];
-    // Las etiquetas aparcadas no pueden tapar piezas ni otras etiquetas.
-    const obstacles: Rect[] = dg.nodes.map((n) => n[l]);
+    const out: Overlay = { pills: [], packets: [], pulses: [] };
+    // Las piezas y los títulos de los grupos no se tapan.
+    const obstacles: Rect[] = [
+      ...dg.nodes.map((n) => n[l]),
+      ...(dg.groups ?? []).map((g) => ({
+        x: g[l].x + 8,
+        y: g[l].y + 6,
+        w: g.label.length * 6.6 + 12,
+        h: 22,
+      })),
+    ];
 
     const fit = (x: number, y: number, w: number) => ({
       x: Math.min(Math.max(x, w / 2 + 2), W - w / 2 - 2),
@@ -626,7 +338,15 @@ export class DiagramComponent {
       const done = t >= it.start + it.dur;
       const p = done ? 1 : ease((t - it.start) / it.dur);
       const w = it.msg.label.length * cw + 16;
-      const base = { w, h, text: it.msg.label, kind: it.kind };
+      const toPill = (pos: { x: number; y: number }): Pill => ({
+        key: `l${i}`,
+        x: pos.x - w / 2,
+        y: pos.y - h / 2,
+        w,
+        h,
+        text: it.msg.label,
+        kind: it.kind,
+      });
 
       if (it.kind === 'self') {
         const b = byId.get(it.msg.from)![l];
@@ -644,8 +364,8 @@ export class DiagramComponent {
           ],
           w,
         );
-        pills.push({ key: `s${i}`, ...pos, moving: !done, ...base });
-        if (!done) pulses.push({ key: `p${i}`, x: b.x, y: b.y, w: b.w, h: b.h, p, kind: it.kind });
+        out.pills.push(toPill(pos));
+        if (!done) out.pulses.push({ key: `p${i}`, x: b.x, y: b.y, w: b.w, h: b.h, p });
         return;
       }
 
@@ -653,8 +373,8 @@ export class DiagramComponent {
       const g = geo.get(it.edgeId)!;
       if (!done) {
         const pt = pointAt(g, it.reverse ? 1 - p : p);
-        packets.push({ key: `k${i}`, x: pt.x, y: pt.y, kind: it.kind });
-        pills.push({ key: `e${i}`, ...fit(pt.x, pt.y - h / 2 - 10, w), moving: true, ...base });
+        out.packets.push({ key: `k${i}`, x: pt.x, y: pt.y, kind: it.kind });
+        out.pills.push(toPill(fit(pt.x, pt.y - h / 2 - 10, w)));
         return;
       }
 
@@ -671,32 +391,18 @@ export class DiagramComponent {
         for (const f of [0.5, 0.3, 0.7]) {
           const x = sg.a.x + (sg.b.x - sg.a.x) * f;
           const y = sg.a.y + (sg.b.y - sg.a.y) * f;
-          if (horizontal) {
-            cands.push({ x, y: y - h / 2 - 5 }, { x, y: y + h / 2 + 5 });
-          } else {
-            cands.push({ x, y }, { x: x + w / 2 + 7, y }, { x: x - w / 2 - 7, y });
-          }
+          if (horizontal) cands.push({ x, y: y - h / 2 - 5 }, { x, y: y + h / 2 + 5 });
+          else cands.push({ x, y }, { x: x + w / 2 + 7, y }, { x: x - w / 2 - 7, y });
         }
       }
-      const mid = g.labelAt.x;
       cands.push(
-        { x: mid, y: Math.min(a.y, b.y) - h / 2 - 6 },
-        { x: mid, y: Math.max(a.y + a.h, b.y + b.h) + h / 2 + 6 },
+        { x: g.labelAt.x, y: Math.min(a.y, b.y) - h / 2 - 6 },
+        { x: g.labelAt.x, y: Math.max(a.y + a.h, b.y + b.h) + h / 2 + 6 },
       );
-      pills.push({ key: `e${i}`, ...place(cands, w), moving: false, ...base });
+      out.pills.push(toPill(place(cands, w)));
     });
 
-    return { pills, packets, pulses };
-  }
-
-  private syncUrl(): void {
-    if (!this.isBrowser) return;
-    const params = new URLSearchParams();
-    params.set('escenario', this.scenario().id);
-    params.set('paso', String(this.stepIndex() + 1));
-    if (this.view() === 'seq') params.set('vista', 'secuencia');
-    const path = this.location.path().split('?')[0].split('#')[0];
-    this.location.replaceState(path, params.toString());
+    return out;
   }
 }
 

@@ -40,39 +40,6 @@ import { Icon } from './icon';
           }
         </ul>
 
-        @if (full()) {
-          <div class="flows">
-            <h4>Flujos que puedes recorrer</h4>
-            <ul>
-              @for (s of p.diagram.scenarios; track s.id) {
-                @if (!s.fault) {
-                  <li>
-                    <a [routerLink]="['/proyectos', p.slug]" [queryParams]="{ escenario: s.id }">
-                      <span class="dot" aria-hidden="true"></span>{{ s.name }}
-                    </a>
-                  </li>
-                }
-              }
-            </ul>
-            <h4>Fallos que puedes provocar</h4>
-            <ul>
-              @for (s of p.diagram.scenarios; track s.id) {
-                @if (s.fault) {
-                  <li>
-                    <a
-                      class="is-error"
-                      [routerLink]="['/proyectos', p.slug]"
-                      [queryParams]="{ escenario: s.id }"
-                    >
-                      <span class="dot" aria-hidden="true"></span>{{ s.fault }}
-                    </a>
-                  </li>
-                }
-              }
-            </ul>
-          </div>
-        }
-
         <div class="actions">
           <a class="btn btn--primary" [routerLink]="['/proyectos', p.slug]">Ver cómo funciona</a>
           <a class="btn" [href]="p.repo" target="_blank" rel="noopener">
@@ -193,54 +160,6 @@ import { Icon } from './icon';
 
     .metrics--two {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .flows {
-      margin-top: 4px;
-
-      h4 {
-        margin: 18px 0 10px;
-        font: 600 0.95rem/1.3 var(--font-body);
-        letter-spacing: 0;
-        color: var(--text-2);
-      }
-
-      ul {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin: 0;
-        padding: 0;
-        list-style: none;
-      }
-
-      a {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 36px;
-        padding: 0 12px;
-        border: 1px solid var(--line-2);
-        border-radius: 999px;
-        color: var(--text);
-        font-size: 0.88rem;
-        text-decoration: none;
-      }
-
-      a:hover {
-        border-color: var(--text-3);
-      }
-
-      .dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--req);
-      }
-
-      a.is-error .dot {
-        background: var(--err);
-      }
     }
 
     .actions {

@@ -16,7 +16,7 @@ export interface Project {
   extraLink?: { label: string; href: string };
   diagram: Diagram;
   /** Demos interactivas con la lógica real del proyecto. */
-  labs: ('prediction' | 'ratelimit' | 'calories')[];
+  labs: ('prediction' | 'calories')[];
 }
 
 export const PROJECTS: Project[] = [
@@ -59,14 +59,6 @@ export const PROJECTS: Project[] = [
         title: 'Sesiones difíciles de robar',
         text: 'Access token de 15 minutos solo en memoria y refresh token en cookie HttpOnly que se rota en cada uso; si alguien reutiliza uno viejo, se cierran todas las sesiones.',
       },
-      {
-        title: 'Fallar rápido y con claridad',
-        text: 'Circuit breakers en el Gateway y en las llamadas entre servicios: si algo cae, el usuario recibe un 503 limpio en vez de esperar un timeout.',
-      },
-      {
-        title: 'Errores en un solo sitio',
-        text: 'Un aspecto de AOP manda las excepciones reales a incidencias, que las guarda para el panel de administración.',
-      },
     ],
     facts: [
       { label: 'Tipo', value: 'Proyecto personal' },
@@ -78,7 +70,7 @@ export const PROJECTS: Project[] = [
     ],
     repo: 'https://github.com/danimmll/Scorevia',
     diagram: SCOREVIA_DIAGRAM,
-    labs: ['prediction', 'ratelimit'],
+    labs: ['prediction'],
   },
   {
     slug: 'fitjourney',
@@ -90,7 +82,7 @@ export const PROJECTS: Project[] = [
     metrics: [
       { value: '24', label: 'endpoints REST documentados' },
       { value: 'MVVM', label: 'arquitectura de la app' },
-      { value: '3', label: 'flujos explicados paso a paso' },
+      { value: 'APK', label: 'firmado y listo para instalar' },
     ],
     stack: ['Java', 'Android', 'Retrofit', 'Node.js', 'Express 5', 'Prisma', 'PostgreSQL'],
     decisions: [

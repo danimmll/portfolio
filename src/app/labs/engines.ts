@@ -2,8 +2,6 @@
  * Lógica portada tal cual desde los repositorios para que las demos calculen lo mismo
  * que el código real:
  *  - Predicción: Microservicio-predicciones, PredictionEngineServiceImpl y PredictionServiceImpl.
- *  - Rate limit: Gateway, VentanaRateLimiter y AuthRateLimiterFilter; bloqueo de cuenta en
- *    usuarios-roles, JwtAuthenticationFilter y UsuarioDetailsServiceImpl.
  *  - Calorías: FitJourney, FitnessCalculator y WorkoutSessionFragment.
  */
 
@@ -129,46 +127,6 @@ export function predecirEnVivo(
     lambdaVisitante: lV,
     marcadores,
   };
-}
-
-// ——— Rate limit del login (ScoreVia) ———
-
-export const LIMITE_LOGIN = 20;
-export const VENTANA_SEGUNDOS = 60;
-export const MAX_INTENTOS_LOGIN = 5;
-export const MINUTOS_BLOQUEO = 15;
-
-/** Ventana fija por IP, como VentanaRateLimiter: empieza con la primera petición. */
-export class Ventana {
-  inicio: number | null = null;
-  contador = 0;
-
-  permitir(ahora: number): boolean {
-    if (this.inicio === null || ahora - this.inicio >= VENTANA_SEGUNDOS) {
-      this.inicio = ahora;
-      this.contador = 0;
-    }
-    this.contador++;
-    return this.contador <= LIMITE_LOGIN;
-  }
-}
-
-/** Intentos fallidos y bloqueo de una cuenta, como en usuarios-roles. */
-export class Cuenta {
-  intentos = 0;
-  bloqueadaHasta = 0;
-
-  /** Devuelve el mensaje del 400 que vería el cliente. */
-  loginFallido(ahora: number): string {
-    if (this.bloqueadaHasta > ahora)
-      return 'Demasiados intentos fallidos. Vuelve a intentarlo más tarde.';
-    this.intentos++;
-    if (this.intentos >= MAX_INTENTOS_LOGIN) {
-      this.bloqueadaHasta = ahora + MINUTOS_BLOQUEO * 60;
-      this.intentos = 0;
-    }
-    return 'Cuenta no existente o datos erróneos';
-  }
 }
 
 // ——— Calorías (FitJourney) ———
