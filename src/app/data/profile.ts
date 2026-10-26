@@ -3,7 +3,7 @@ export const PROFILE = {
   role: 'Desarrollador Full Stack Java',
   status: 'Disponible para trabajar ya',
   intro:
-    'Me centro en el backend: Java, Spring Boot y microservicios. En el front trabajo con Angular y Android. Terminé DAM en 2026, hice las prácticas en VIEWNEXT y ahora estudio Ingeniería Informática en la Universidad de Extremadura mientras busco trabajo como desarrollador.',
+    'Me centro en el backend: Java, Spring Boot y microservicios, y también Node.js con Express. En el front trabajo con Angular y Android. Terminé DAM en 2026, hice las prácticas en VIEWNEXT y ahora estudio Ingeniería Informática en la Universidad de Extremadura mientras busco trabajo como desarrollador.',
   email: 'danielmartinlopez7@gmail.com',
   github: 'https://github.com/danimmll',
   linkedin: 'https://www.linkedin.com/in/daniel-martin-lopez-380996337',
